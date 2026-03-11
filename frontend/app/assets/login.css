@@ -1,0 +1,27 @@
+.loginPage{
+    background-color: #fff;
+    border-radius: ;
+}
+
+@theme {
+  --font-lexend: var(--font-lexend);
+}
+
+/* For standard CSS */
+.login{
+  font-family: var(--font-lexend);
+}
+
+.login-field label{
+    font-size: 1rem;
+    font-weight:600;
+    margin-bottom: 4px;
+}
+
+.login-field input{
+    height: 6vh;
+    border-radius: 18px;
+    background-color: #ebecee;
+    padding-left: 15px;
+    padding-right: 10px;
+}
