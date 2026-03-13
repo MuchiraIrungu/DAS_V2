@@ -6,6 +6,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.auth.models import AbstractUser
+from cloudinary.models import CloudinaryField
 
 class User(AbstractUser):
     """Custom user model with roles"""
@@ -159,6 +160,7 @@ class Student(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     qr_code = models.CharField(max_length=500, blank=True, null=True)  # Store QR code data
+    qr_code_image = CloudinaryField('qr_codes', blank=True, null=True, folder='qr_codes')
     qr_code_image = models.ImageField(upload_to='qr_codes/', blank=True, null=True)  # QR image
     
     class Meta:

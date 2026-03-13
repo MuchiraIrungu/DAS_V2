@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,6 +47,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     "rest_framework",
     "corsheaders",
+
+    #cloudinary
+    "cloudinary",
+    "cloudinary_storage",
 
     "users",
     "students",
@@ -164,6 +171,17 @@ SESSION_SAVE_EVERY_REQUEST = True
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
+
+#cloudinary settings
+# Cloudinary Configuration
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'dijpeivsc',  # Replace with your cloud name
+    'API_KEY': '289636937827363',        # Replace with your API key
+    'API_SECRET': '1W6lpaLXj_imPzhlt8domJOMoFM',  # Replace with your API secret
+}
+
+# Media files storage
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 #media files (for QR code images)
 MEDIA_URL = '/media/'

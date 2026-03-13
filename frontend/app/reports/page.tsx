@@ -9,7 +9,7 @@ import ClassPerformanceComponent from "../components/ReportsComponents/ClassPerf
 
 interface ReportsData{
     avg_attendance:number,
-    flagged_absences:0,
+    flagged_absences:number,
     total_students:number,
 
     attendance_trends:{
