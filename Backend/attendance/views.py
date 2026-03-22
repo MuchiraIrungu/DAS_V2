@@ -204,11 +204,42 @@ def mark_attendance(request):
         else:
             updated_count += 1
         
-        # Count statuses
+        # Count statuses and check abscences
         if attendance_status == 'P':
             present_count += 1
+            FlaggedAbsence.objects.filter(
+                student=student,
+                is_resolved=False
+            ).update(is_resolved=True)
+
         elif attendance_status == 'A':
             absent_count += 1
+
+            total_records = AttendanceRecord.objects.filter(student=student).count()
+            present_records = AttendanceRecord.objects.filter(student=student, status='P').count()
+            student_attendance_pct = round((present_records / total_records) * 100, 2) if total_records > 0 else 0.0
+
+            FlaggedAbsence.objects.get_or_create(
+                student=student,
+                flagged_at=timezone.make_aware(
+                    datetime.combine(attendance_date, datetime.min.time())
+                ),  # fixes the naive datetime warning too
+                defaults={
+                    'is_resolved': False,
+                    'attendance_percentage': student_attendance_pct,
+                    'consecutive_absences': AttendanceRecord.objects.filter(
+                        student=student,
+                        status='A'
+                    ).count(),
+                    'total_absences_this_month': AttendanceRecord.objects.filter(
+                        student=student,
+                        status='A',
+                        date__month=attendance_date.month,
+                        date__year=attendance_date.year
+                    ).count(),
+                }
+            )
+
         elif attendance_status == 'L':
             late_count += 1
         elif attendance_status == 'E':
@@ -576,7 +607,7 @@ def attendance_report(request):
         {
             'success': True,
             'data': {
-                'total_students': Student.objects.filter(is_active=True).count(),
+                'total_students': Student.objects.filter(status='active').count(),
                 'avg_attendance': avg_attendance,
                 'flagged_absences': flagged_count,
                 'attendance_trends': trends,

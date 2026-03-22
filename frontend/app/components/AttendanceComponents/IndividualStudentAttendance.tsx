@@ -36,7 +36,13 @@ interface WeeklyAttendanceSummary {
     attendance_percentage: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const toLocalDateStr = (date: Date): string => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+};
 
 /** Returns Monday–Friday of the week containing `date` */
 const getWeekRange = (date: Date) => {
@@ -48,10 +54,11 @@ const getWeekRange = (date: Date) => {
     const friday = new Date(monday);
     friday.setDate(monday.getDate() + 4);
     return {
-        start: monday.toISOString().split("T")[0],
-        end: friday.toISOString().split("T")[0],
+        start: toLocalDateStr(monday),
+        end: toLocalDateStr(friday),
     };
 };
+
 
 const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("en-GB", {
@@ -131,9 +138,9 @@ export default function StudentWeeklyAttendance({
                     // Build Mon–Fri day entries
                     const days: DayAttendance[] = [];
                     for (let i = 0; i < 5; i++) {
-                        const d = new Date(weekStart);
+                        const d = new Date(weekStart + "T00:00:00");
                         d.setDate(d.getDate() + i);
-                        const dateStr = d.toISOString().split("T")[0];
+                        const dateStr = toLocalDateStr(d);
                         days.push({
                             date: dateStr,
                             status: recordMap[dateStr] ?? null,
@@ -371,7 +378,7 @@ export default function StudentWeeklyAttendance({
                                         {summary.days.map((day, idx) => {
                                             const isToday =
                                                 day.date ===
-                                                new Date().toISOString().split("T")[0];
+                                                toLocalDateStr(new Date());
                                             return (
                                                 <tr
                                                     key={day.date}

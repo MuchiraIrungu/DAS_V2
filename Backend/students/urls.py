@@ -5,6 +5,7 @@ app_name = 'students'
 
 urlpatterns = [
     # Authentication
+    path('auth/csrf/', views.get_csrf_token, name='csrf'),
     path('auth/login/', views.login_view, name='login'),
     path('auth/logout/', views.logout_view, name='logout'),
     path('auth/me/', views.current_user, name='current-user'),

@@ -30,6 +30,7 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
+from django.middleware.csrf import get_token
 
 from .models import Student, Class, Teacher, School, Grade, Term, Subject, PerformanceRecord, Student
 from .serializers import (
@@ -53,7 +54,14 @@ from .serializers import (
     StudentPerformanceSummarySerializer,
     StudentQRCodeSerializer
 )
- 
+
+from attendance.models import AttendanceRecord
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_csrf_token(request):
+    token = get_token(request)
+    return Response({'csrfToken': token})
 
 @csrf_exempt
 @api_view(['POST'])
@@ -327,6 +335,7 @@ class StudentListCreateView(generics.ListCreateAPIView):
         queryset = Student.objects.select_related('current_class').all()
         
         # Filter by search query
+        
         search = self.request.query_params.get('search', None)
         if search:
             queryset = queryset.filter(
@@ -460,6 +469,7 @@ class StudentDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def student_attendance_history(request, pk):
     """
     GET /api/students/{id}/attendance/
@@ -481,8 +491,21 @@ def student_attendance_history(request, pk):
     start_date = request.query_params.get('start_date', None)
     end_date = request.query_params.get('end_date', None)
     
-    # TODO: Fetch actual attendance records
-    # For now, return mock data
+    records_query = AttendanceRecord.objects.filter(student=student).order_by('date')
+
+    if start_date:
+        records_query = records_query.filter(date__gte = start_date)
+    if end_date:
+        records_query = records_query.filter(date__lte = end_date)
+
+    records_data = [
+        {
+            'date': str(record.date),
+            'status': record.status,
+            'subject': record.class_session.name if record.class_session else None,
+        }
+        for record in records_query
+    ]
     
     return Response(
         {
@@ -490,7 +513,7 @@ def student_attendance_history(request, pk):
             'data': {
                 'student': StudentDetailSerializer(student).data,
                 'attendance_percentage': student.get_attendance_percentage(start_date, end_date),
-                'records': []  # TODO: Add actual records
+                'records': records_data
             }
         },
         status=status.HTTP_200_OK

@@ -48,17 +48,36 @@ export default function LoginPage() {
         e.preventDefault();
         setLoginError("");
 
+        //fetch token
+        const csrfRes = await fetch("http://localhost:8000/api/auth/csrf/",{
+            credentials:'include'
+        });
+
+        const { csrfToken } = await csrfRes.json();
+
+        //Login logic
         const response = await fetch("http://localhost:8000/api/auth/login/", {
             method: "POST",
             credentials: "include",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken, 
+            },
             body: JSON.stringify(formData),
         });
 
         const data = await response.json();
 
         if (response.status === 200) {
-            router.push("/dashboard");
+            document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
+            const role = data.user.role 
+            const storeRole = localStorage.setItem('role', role)
+
+            if (role === 'admin' || role === 'Admin' || role === 'ADMIN'){
+                router.push('/dashboard')
+            }else{
+                router.push('/attendance')
+            }
         } else {
             setLoginError(data.error || "Invalid credentials");
         }
@@ -110,14 +129,14 @@ export default function LoginPage() {
             <section className="bg-[#d4e3f3] flex min-w-screen min-h-screen justify-center items-center text-black login px-4 py-8">
                 <div className="justify-center items-center text-center font-lexend w-full max-w-sm sm:max-w-md">
                     <Image
-                        className="white:invert mb-5 lg:mb-7 mx-auto"
-                        src="/next.svg"
+                        className="black:invert bg-[#d4e3f3] mb-2 lg:mb-4 mx-auto rounded-2xl object-cover shrink-0 "
+                        src="/logo2.jpg"
                         alt="Next.js logo"
-                        width={90}
-                        height={20}
+                        width={130}
+                        height={40}
                         priority
                     />
-                    <h1 className="font-bold text-xl lg:text-2xl">SmartAttendance</h1>
+                    <h1 className="font-bold text-xl lg:text-2xl">Digital Attendance</h1>
                     <span className="text-sm lg:text-base">Primary Education Management</span>
 
                     <div className="bg-[#f8f9fa] w-full rounded-3xl pt-8 lg:pt-10 px-5 pb-5 mt-7 lg:mt-10 mb-5 justify-center items-start text-start shadow-[0px_48px_100px_0px_rgba(17,12,46,0.15)]">
@@ -130,7 +149,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <form onSubmit={handleSubmit} className="mt-5">
+                        <form onSubmit={handleSubmit} className="mt-2">
                             <div className="flex flex-col gap-1.5 login-field">
                                 <label htmlFor="email" className="text-sm lg:text-base">Email Address</label>
                                 <input

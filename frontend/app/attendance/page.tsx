@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Bell, CalendarCheck, History, Printer, SendHorizonal, SquareArrowDownLeft, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Bell, CalendarCheck, History, Printer, SendHorizonal, SquareArrowDownLeft, CheckCircle, XCircle, Loader2, Router } from "lucide-react";
 import ScannerPage from "../components/AttendanceComponents/QrCodeScannerComponent";
 import PreviousAttendanceRecords from "../components/AttendanceComponents/PreviousAttendance";
-
+import StudentWeeklyAttendance from "../components/AttendanceComponents/IndividualStudentAttendance";
 
 
 interface ClassOption {
@@ -23,6 +23,12 @@ interface AttendanceStudent {
     full_name: string;
     photo_url: string | null;
     status: "P" | "A";
+}
+
+interface IndividualStudent{
+    id: number,
+    name:string,
+    photo:string | null,
 }
 
 
@@ -48,10 +54,12 @@ export default function Attendance() {
     const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [lastScanned, setLastScanned] = useState<string | null>(null);
+    const [selectedStudent, setSelectedStudent] = useState<IndividualStudent | null>(null);
     const [showRecord, setShowRecord] = useState(false)
 
     const presentCount = students.filter((s) => s.status === "P").length;
     const absentCount = students.filter((s) => s.status === "A").length;
+
 
     useEffect(() => {
         const fetchClasses = async () => {
@@ -149,7 +157,12 @@ export default function Attendance() {
                 status: "A" as const,
             }));
 
-            setStudents(mapped);
+            const filtered = mapped.filter((s) => {
+                const raw = rawList.find((r) => r.id === s.id);
+                return raw?.current_class === selectedClasses?.id;
+            })
+
+            setStudents(filtered);
             console.log(`SUCCESS — Loaded ${mapped.length} students`);
 
             if (mapped.length === 0) {
@@ -242,6 +255,15 @@ export default function Attendance() {
         }
     };
 
+    const routes = () => {
+        const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+        if (role === "Admin" || role === "admin") {
+            return <a href="/dashboard">Dashboard</a>;
+        } else {
+            return <a href="/students">Students</a>;
+        }
+    };
+
 
     return (
         <main className="flex flex-col overflow-hidden overflow-y-scroll bg-[#dee2e6] w-screen min-h-screen attendance">
@@ -250,8 +272,8 @@ export default function Attendance() {
             <section className="nav min-h-[10vh] bg-gray-50 shadow-xl justify-between items-center flex flex-row p-3 px-4 sm:px-6 lg:px-10 sticky top-0 z-50">
                 <div className="flex flex-row gap-3 lg:gap-5 items-center">
                     <Image
-                        className="bg-blue-500 rounded-xl p-2 object-contain shrink-0"
-                        src={'/logo.png'}
+                        className="bg-green-500 rounded-lg object-contain shrink-0"
+                        src={'/logo2.jpg'}
                         alt="EduTrack"
                         width={44}
                         height={44}
@@ -276,7 +298,7 @@ export default function Attendance() {
                         priority
                     />
                     <Bell color="black" size={20} className="cursor-pointer" />
-                    <span className="flex flex-row items-center gap text-gray-900"><SquareArrowDownLeft size={18}/><a href="/dashboard">Dashboard</a></span>
+                    <span className="flex flex-row items-center gap text-gray-900"><SquareArrowDownLeft size={18}/> {routes()}</span>
                 </div>
             </section>
 
@@ -286,13 +308,13 @@ export default function Attendance() {
                 <div className="register w-[95%] lg:w-[90%] bg-gray-50 rounded-xl p-4 lg:p-7 shadow-sm">
                     <div className="flex flex-row justify-between items-center gap-2 mb-5 lg:mb-8">
                         <div className="flex flex-row items-center gap-2">
-                            <CalendarCheck size={22} className="text-blue-600 shrink-0" />
+                            <CalendarCheck size={22} className="text-gray-600 shrink-0" />
                             <h1 className="font-bold text-lg lg:text-xl text-gray-900">Take Attendance</h1>
                         </div>
                         <div>
                             <button
                                 onClick={() => showQrAttendance(true)}
-                                className="text-gray-900 bg-gray-400 px-4 py-4 rounded-xl cursor-pointer">
+                                className="text-gray-900 bg-green-400 px-4 py-4 rounded-xl cursor-pointer">
                                 Take QR Attendance
                             </button>
 
@@ -357,15 +379,15 @@ export default function Attendance() {
 
                         {/* Stats */}
                         <div className="flex flex-row gap-3 col-span-2 sm:col-span-3 lg:col-auto lg:gap-4 lg:ml-auto">
-                            <div className="flex flex-col items-center justify-center bg-blue-100 border rounded-xl h-16 lg:h-20 flex-1 lg:flex-none lg:px-8">
+                            <div className="flex flex-col items-center justify-center bg-gray-100 border rounded-xl h-16 lg:h-20 flex-1 lg:flex-none lg:px-8">
                                 <h2 className="text-2xl lg:text-3xl font-black text-blue-600">{students.length}</h2>
                                 <span className="text-[9px] lg:text-[10px] font-bold text-blue-500 uppercase">Total Students</span>
                             </div>
-                            <div className="flex flex-col items-center justify-center bg-blue-100 border rounded-xl h-16 lg:h-20 flex-1 lg:flex-none lg:px-4">
+                            <div className="flex flex-col items-center justify-center bg-gray-100 border rounded-xl h-16 lg:h-20 flex-1 lg:flex-none lg:px-4">
                                 <h2 className="text-2xl lg:text-3xl font-black text-green-600">{presentCount}</h2>
                                 <span className="text-[9px] lg:text-[10px] font-bold text-green-500 uppercase">Present</span>
                             </div>
-                            <div className="flex flex-col items-center justify-center bg-blue-100 border rounded-xl h-16 lg:h-20 flex-1 lg:flex-none lg:px-4">
+                            <div className="flex flex-col items-center justify-center bg-gray-100 border rounded-xl h-16 lg:h-20 flex-1 lg:flex-none lg:px-4">
                                 <h2 className="text-2xl lg:text-3xl font-black text-red-600">{absentCount}</h2>
                                 <span className="text-[9px] lg:text-[10px] font-bold text-red-500 uppercase">Absent</span>
                             </div>
@@ -377,7 +399,7 @@ export default function Attendance() {
                 <div className="manual-attendance w-[95%] lg:w-[90%] bg-white shadow-xl rounded-xl mt-6 lg:mt-9" style={{ minHeight: '50vh' }}>
 
                     {/* Table header */}
-                    <div className="grid grid-cols-12 bg-blue-50 px-4 py-3 rounded-t-xl text-[10px] lg:text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <div className="grid grid-cols-12 bg-green-50 px-4 py-3 rounded-t-xl text-[10px] lg:text-xs font-bold text-gray-500 uppercase tracking-wider">
                         <div className="col-span-1">#</div>
                         <div className="col-span-6 sm:col-span-5">Student</div>
                         <div className="col-span-3 hidden sm:block">Admission No.</div>
@@ -438,7 +460,7 @@ export default function Attendance() {
                                     #{student.admission_number}
                                 </div>
 
-                                <div className="col-span-5 sm:col-span-3 flex justify-center">
+                                <div className="col-span-5 sm:col-span-3 flex justify-center gap-10">
                                     <button
                                         onClick={() => toggleStatus(student.id)}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${
@@ -451,6 +473,14 @@ export default function Attendance() {
                                             ? <><CheckCircle size={13} /> Present</>
                                             : <><XCircle size={13} /> Absent</>
                                         }
+                                    </button>
+
+                                    <button
+                                        onClick={() => setSelectedStudent({ id: student.id, name: student.full_name, photo: student.photo_url })}
+                                        className="p-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-500 transition-colors border border-blue-100"
+                                        title="View attendance history"
+                                    >
+                                        <History size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -508,6 +538,17 @@ export default function Attendance() {
                     </div>
                 </div>
             </section>
+
+            {selectedStudent && (
+                <StudentWeeklyAttendance
+                    isOpen={!!selectedStudent}
+                    onClose={() => setSelectedStudent(null)}
+                    studentId={selectedStudent.id}
+                    studentName={selectedStudent.name}
+                    studentPhoto={selectedStudent.photo}
+                    selectedClassId={selectedClasses?.id ?? null}
+                />
+            )}
         </main>
     );
 }
