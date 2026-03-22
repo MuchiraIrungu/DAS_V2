@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { X, Upload, User } from "lucide-react";
 import Image from "next/image";
+import { API_PATH } from "@/app/lib/path";
 
 interface AddStudentForm {
     admission_number: string;
@@ -108,7 +109,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
 
         const load = async () => {
             try {
-                const res = await fetch("http://localhost:8000/api/classes/", { credentials: "include" });
+                const res = await fetch(`${API_PATH}/api/classes/`, { credentials: "include" });
                 const data = await res.json();
                 if (!cancelled && data.success) setClasses(data.data.results || data.data);
             } catch { /* stay empty */ }

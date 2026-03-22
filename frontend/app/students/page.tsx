@@ -6,6 +6,7 @@ import Image from "next/image";
 import StudentRecords from "../components/StudentsComponents/StudentRecords";
 import AddStudentModal, { StudentData } from "../components/StudentsComponents/AddStudentsComponent";
 import jsPDF from "jspdf";
+import { API_PATH } from "../lib/path";
 
 interface StudentStats {
     total_active: number;
@@ -188,7 +189,7 @@ export default function StudentsPage() {
         const fetchClasses = async () => {
             setLoadingClasses(true);
             try {
-                const res = await fetch("http://localhost:8000/api/classes/", { credentials: "include" });
+                const res = await fetch(`${API_PATH}/api/classes/`, { credentials: "include" });
                 const data = await res.json();
                 if (data.success) {
                     const list: ClassOption[] = (data.data.results ?? data.data).map(
@@ -215,7 +216,7 @@ export default function StudentsPage() {
             if (search) params.append('search', search);
             if (statusFilter !== 'all') params.append('status', statusFilter);
             if (gradeFilter !== 'all') params.append('grade', gradeFilter);
-            return `http://localhost:8000/api/students/?${params.toString()}`;
+            return `${API_PATH}/api/students/?${params.toString()}`;
         };
 
         const fetchTabData = async () => {
@@ -253,7 +254,7 @@ export default function StudentsPage() {
         if (deleteConfirmId === studentId) {
             if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
             setDeleting(true);
-            fetch(`http://localhost:8000/api/students/${studentId}/`, {
+            fetch(`${API_PATH}/api/students/${studentId}/`, {
                 method: "DELETE",
                 credentials: "include",
                 headers: { "X-CSRFToken": getCookie("csrftoken") },
@@ -294,7 +295,7 @@ export default function StudentsPage() {
             if (classId !== "all") params.append("current_class", classId);
 
             const studentsRes = await fetch(
-                `http://localhost:8000/api/students/?${params.toString()}`,
+                `${API_PATH}/api/students/?${params.toString()}`,
                 { credentials: "include" }
             );
             const studentsData = await studentsRes.json();
@@ -308,7 +309,7 @@ export default function StudentsPage() {
             // Step 2: Fetch QR codes for all students in parallel
             const qrResults = await Promise.allSettled(
                 students.map((s) =>
-                    fetch(`http://localhost:8000/api/students/${s.id}/qr-code/`, {
+                    fetch(`${API_PATH}/api/students/${s.id}/qr-code/`, {
                         credentials: "include",
                     }).then((r) => r.json())
                 )
@@ -357,7 +358,7 @@ export default function StudentsPage() {
                         resolve(canvas.toDataURL("image/png"));
                     };
                     img.onerror = reject;
-                    img.src = url.startsWith("http") ? url : `http://localhost:8000${url}`;
+                    img.src = url.startsWith("http") ? url : `${API_PATH}/${url}`;
                 });
 
             const imageDataList = await Promise.allSettled(

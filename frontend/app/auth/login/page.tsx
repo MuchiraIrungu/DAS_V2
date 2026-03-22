@@ -1,4 +1,5 @@
 "use client";
+import { API_PATH } from "@/app/lib/path";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -49,14 +50,14 @@ export default function LoginPage() {
         setLoginError("");
 
         //fetch token
-        const csrfRes = await fetch("http://localhost:8000/api/auth/csrf/",{
+        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`,{
             credentials:'include'
         });
 
         const { csrfToken } = await csrfRes.json();
 
         //Login logic
-        const response = await fetch("http://localhost:8000/api/auth/login/", {
+        const response = await fetch(`${API_PATH}/api/auth/login/`, {
             method: "POST",
             credentials: "include",
             headers: { 
@@ -89,7 +90,7 @@ export default function LoginPage() {
         setRequestSuccess("");
         setRequestLoading(true);
 
-        const response = await fetch("http://localhost:8000/api/auth/request-access/", {
+        const response = await fetch(`${API_PATH}/api/auth/request-access/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(requestForm),
@@ -112,7 +113,7 @@ export default function LoginPage() {
 
     useEffect(()=>{
         const fetchStatus = async() =>{
-            const res = await fetch('http://localhost:8000/api/attendance/system/status/',{
+            const res = await fetch(`${API_PATH}/api/attendance/system/status/`,{
                 method:'GET',
                 credentials:'include'
             })

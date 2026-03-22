@@ -11,6 +11,7 @@ import {
     TableCell,
     getKeyValue
 } from "@heroui/table";
+import { API_PATH } from "@/app/lib/path";
 
 interface PageProps {
     isOpen: boolean;
@@ -48,7 +49,7 @@ export default function PreviousAttendanceRecords({
             setError(null);
 
             try {
-                const url = `http://localhost:8000/api/attendance/previous/?class_id=${selectedClassId}&limit=10`;
+                const url = `${API_PATH}/api/attendance/previous/?class_id=${selectedClassId}&limit=10`;
                 const res = await fetch(url, { credentials: "include" });
 
                 if (!res.ok) {

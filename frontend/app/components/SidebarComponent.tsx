@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { LayoutDashboard, BookOpenCheck, Users, FileChartColumn, Settings, Menu, X, LogOut } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
+import { API_PATH } from "../lib/path";
 
 const adminItems = [
     { index: 1, icon: LayoutDashboard, name: 'Dashboard', href: '/dashboard' },
@@ -36,7 +37,7 @@ export default function Sidebar() {
             return '';
         };
 
-        const res = await fetch('http://localhost:8000/api/auth/logout/', {
+        const res = await fetch(`${API_PATH}/api/auth/logout/`, {
             method: 'POST',
             credentials: "include",
             headers: {

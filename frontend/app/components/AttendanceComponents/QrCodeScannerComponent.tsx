@@ -3,6 +3,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Scanner, useDevices, outline, boundingBox, centerText } from "@yudiel/react-qr-scanner";
 import { CheckCircle, XCircle, Camera, RefreshCw } from "lucide-react";
+import { API_PATH } from "@/app/lib/path";
 
 interface StudentResult {
     student_id: number;
@@ -55,7 +56,7 @@ export default function ScannerPage({isOpen, onClose, onQrSuccess}:ScannerPageMo
         setStudent(null);
 
         try {
-            const res = await fetch("http://localhost:8000/api/attendance/validate-qr/", {
+            const res = await fetch(`${API_PATH}/api/attendance/validate-qr/`, {
                 method: "POST",
                 credentials: "include",
                 headers: {

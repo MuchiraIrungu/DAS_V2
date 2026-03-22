@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { XCircle, Loader2, User, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import Image from "next/image";
+import { API_PATH } from "@/app/lib/path";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -106,10 +107,8 @@ export default function StudentWeeklyAttendance({
             setError(null);
 
             try {
-                // Uses the student attendance history endpoint from views.py:
-                // GET /api/students/{id}/attendance/?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD
                 const url =
-                    `http://localhost:8000/api/students/${studentId}/attendance/` +
+                    `${API_PATH}/api/students/${studentId}/attendance/` +
                     `?start_date=${weekStart}&end_date=${weekEnd}` +
                     (selectedClassId ? `&class_id=${selectedClassId}` : "");
 

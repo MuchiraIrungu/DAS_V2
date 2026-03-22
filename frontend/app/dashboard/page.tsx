@@ -6,6 +6,7 @@ import Image from "next/image";
 import AttendanceChart from "../components/DashboardComponents/AttendanceChart";
 import StaffPerformance from "../components/DashboardComponents/StaffPerformance";
 import AttendanceTable from "../components/DashboardComponents/AttendanceTable";
+import { API_PATH } from "../lib/path";
 
 
 interface User{
@@ -74,7 +75,7 @@ export default function Dashboard() {
 
     useEffect(()=>{
         const fetchUser = async() =>{
-            const res = await fetch('http://localhost:8000/api/auth/me',{
+            const res = await fetch(`${API_PATH}/api/auth/me`,{
                 method:'GET',
                 credentials:"include",
             })
@@ -87,7 +88,7 @@ export default function Dashboard() {
         }
 
         const fetchDashboardData = async() =>{
-            const res = await fetch('http://localhost:8000/api/attendance/dashboard/stats/',{
+            const res = await fetch(`${API_PATH}/api/attendance/dashboard/stats/`,{
                 method:'GET',
                 credentials:'include'
             })

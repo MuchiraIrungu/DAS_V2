@@ -5,6 +5,7 @@ import { Calendar, ChevronDown, CopyIcon, Copyright, Dot, File, ListFilter, Move
 import PerformanceTrendComponent from "../components/ReportsComponents/PerformanceTrend";
 import GradeAttendanceComponent from "../components/ReportsComponents/GradeTrend";
 import ClassPerformanceComponent from "../components/ReportsComponents/ClassPerformanceTable";
+import { API_PATH } from "../lib/path";
 
 
 interface ReportsData{
@@ -39,7 +40,7 @@ export default function StudentReports() {
 
     useEffect(()=>{
         const fetchReportsData = async() =>{
-            const res = await fetch('http://localhost:8000/api/attendance/reports/attendance-summary/',{
+            const res = await fetch(`${API_PATH}/api/attendance/reports/attendance-summary/`,{
                 method:'GET',
                 credentials:'include'
             })

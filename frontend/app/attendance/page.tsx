@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Bell, CalendarCheck, History, Printer, SendHorizonal, SquareArrowDownLeft, CheckCircle, XCircle, Loader2, Router } from "lucide-react";
+import { Bell, CalendarCheck, History, Printer, SendHorizonal, SquareArrowDownLeft, CheckCircle, XCircle, Loader2, } from "lucide-react";
 import ScannerPage from "../components/AttendanceComponents/QrCodeScannerComponent";
 import PreviousAttendanceRecords from "../components/AttendanceComponents/PreviousAttendance";
 import StudentWeeklyAttendance from "../components/AttendanceComponents/IndividualStudentAttendance";
+import { API_PATH } from "../lib/path";
 
 
 interface ClassOption {
@@ -64,7 +65,7 @@ export default function Attendance() {
     useEffect(() => {
         const fetchClasses = async () => {
             try {
-                const res = await fetch("http://localhost:8000/api/classes/", { credentials: "include" });
+                const res = await fetch(`${API_PATH}/api/classes/`, { credentials: "include" });
                 const data = await res.json();
                 if (data.success) {
                     const list: ClassOption[] = (data.data.results ?? data.data).map(
@@ -88,7 +89,7 @@ export default function Attendance() {
             setSelectedSubject(null);
             try {
                 const res = await fetch(
-                    `http://localhost:8000/api/subjects/?grade_id=${selectedClasses.id}`,
+                    `${API_PATH}/api/subjects/?grade_id=${selectedClasses.id}`,
                     { credentials: "include" }
                 );
                 const data = await res.json();
@@ -120,7 +121,7 @@ export default function Attendance() {
         setSubmitSuccess(null);
         setSubmitError(null);
 
-        const url = `http://localhost:8000/api/students/?current_class=${selectedClasses.id}`;
+        const url = `${API_PATH}/api/students/?current_class=${selectedClasses.id}`;
         console.log("FETCHING STUDENTS FROM →", url);
 
         try {
@@ -223,7 +224,7 @@ export default function Attendance() {
         };
 
         try {
-            const res = await fetch("http://localhost:8000/api/attendance/mark/", {
+            const res = await fetch(`${API_PATH}/api/attendance/mark/`, {
                 method: "POST",
                 credentials: "include",
                 headers: {

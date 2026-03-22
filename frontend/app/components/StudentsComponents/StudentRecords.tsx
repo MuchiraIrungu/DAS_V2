@@ -12,6 +12,7 @@ import {
     getKeyValue,
 } from "@heroui/react";
 import { Pencil, Trash2 } from "lucide-react";
+import { API_PATH } from "@/app/lib/path";
 
 type HeroKey = string | number;
 
@@ -71,7 +72,7 @@ export default function StudentRecords({ onEdit, onDelete, deleteConfirmId, refe
             if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
             if (gradeFilter && gradeFilter !== 'all') params.append('grade', gradeFilter);
 
-            const res = await fetch(`http://localhost:8000/api/students/?${params.toString()}`, {
+            const res = await fetch(`${API_PATH}/api/students/?${params.toString()}`, {
                 method: "GET",
                 credentials: "include",
             });
