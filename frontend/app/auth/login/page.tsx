@@ -90,9 +90,15 @@ export default function LoginPage() {
         setRequestSuccess("");
         setRequestLoading(true);
 
+        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`,{
+            credentials:'include'
+        });
+
+        const { csrfToken } = await csrfRes.json();
+
         const response = await fetch(`${API_PATH}/api/auth/request-access/`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json","X-CSRFToken": csrfToken, },
             body: JSON.stringify(requestForm),
         });
 
