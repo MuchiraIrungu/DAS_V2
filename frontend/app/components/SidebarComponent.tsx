@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { LayoutDashboard, BookOpenCheck, Users, FileChartColumn, Settings, Menu, X, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpenCheck, Users, FileChartColumn, Settings, Menu, X, LogOut, Shield } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 import { API_PATH } from "../lib/path";
 
@@ -12,6 +12,7 @@ const adminItems = [
     { index: 3, icon: Users, name: 'Students', href: '/students' },
     { index: 4, icon: FileChartColumn, name: 'Reports', href: '/reports' },
     { index: 5, icon: Settings, name: 'Settings', href: '/settings' },
+    { index: 6, icon: Shield, name: 'Django Admin', href: 'http://localhost:8000/admin/' }, 
 ];
 
 const teacherItems = [
@@ -95,18 +96,35 @@ export default function Sidebar() {
                             const isActive = pathname === item.href;
                             return (
                                 <li key={item.index}>
-                                    <Link
-                                        href={item.href}
-                                        onClick={() => setMobileOpen(false)}
-                                        className={`flex flex-row gap-2 items-center h-[5vh] min-h-10 w-full pl-2 rounded-xl text-sm lg:text-base transition-colors
+                                    {item.href.startsWith('http') ? (
+                                        <a
+                                            href={item.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            onClick={() => setMobileOpen(false)}
+                                            className={`flex flex-row gap-2 items-center h-[5vh] min-h-10 w-full pl-2 rounded-xl text-sm lg:text-base transition-colors
                                             ${isActive
                                                 ? 'text-green-800 bg-green-100 font-medium'
                                                 : 'hover:text-green-800 hover:bg-green-50'
                                             }`}
-                                    >
-                                        <Icon size={18} className="shrink-0" />
-                                        {item.name}
-                                    </Link>
+                                        >
+                                            <Icon size={18} className="shrink-0" />
+                                            {item.name}
+                                        </a>
+                                    ) : (
+                                        <Link
+                                            href={item.href}
+                                            onClick={() => setMobileOpen(false)}
+                                            className={`flex flex-row gap-2 items-center h-[5vh] min-h-10 w-full pl-2 rounded-xl text-sm lg:text-base transition-colors
+                                            ${isActive
+                                                ? 'text-green-800 bg-green-100 font-medium'
+                                                : 'hover:text-green-800 hover:bg-green-50'
+                                            }`}
+                                        >
+                                            <Icon size={18} className="shrink-0" />
+                                            {item.name}
+                                        </Link>
+                                    )}
                                 </li>
                             );
                         })}
