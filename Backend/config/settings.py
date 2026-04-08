@@ -154,9 +154,9 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'static', 
-]
+#STATICFILES_DIRS = [
+ #   BASE_DIR / 'static', 
+#]
 
 # Default primary key field type
 #CORS_ALLOW_ALL_ORIGINS = True
@@ -166,6 +166,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "https://das-v2.vercel.app", 
     "https://das-v2.onrender.com",
+    "https://*.vercel.app",
 ]
 
 if not DEBUG:
