@@ -12,7 +12,7 @@ const adminItems = [
     { index: 3, icon: Users, name: 'Students', href: '/students' },
     { index: 4, icon: FileChartColumn, name: 'Reports', href: '/reports' },
     { index: 5, icon: Settings, name: 'Settings', href: '/settings' },
-    { index: 6, icon: Shield, name: 'Django Admin', href: 'http://localhost:8000/admin/' }, 
+    { index: 6, icon: Shield, name: 'Django Admin', href: `${API_PATH}/admin/` }, 
 ];
 
 const teacherItems = [
