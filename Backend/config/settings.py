@@ -10,6 +10,8 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
+import os, dj_database_url
+
 from pathlib import Path
 import cloudinary
 import cloudinary.uploader
@@ -23,18 +25,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-51$9d@(c!6f3_$c3@(orl!0p@#gb*ta5egbk3jgir(c513fn0e'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-51$9d@(c!6f3_$c3@(orl!0p@#gb*ta5egbk3jgir(c513fn0e')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,das-v2.vercel.app').split(',')
+
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "das-v2.vercel.app",
 ]
+frontend_url = os.environ.get('FRONTEND_URL')
+if frontend_url:
+    CORS_ALLOWED_ORIGINS.append(frontend_url)
 
 # Application definition
 
@@ -59,6 +65,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', 
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -104,10 +111,9 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+    )
 }
 
 
@@ -146,6 +152,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static', 
+]
 
 # Default primary key field type
 #CORS_ALLOW_ALL_ORIGINS = True
@@ -153,16 +163,24 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://das-v2.vercel.app", 
 ]
+if frontend_url:
+    CSRF_TRUSTED_ORIGINS.append(frontend_url)
 
-SESSION_COOKIE_SAMESITE = 'Lax'
+if not DEBUG:
+    SESSION_COOKIE_SAMESITE = 'None'  
+    SESSION_COOKIE_SECURE = True     
+    CSRF_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SECURE = True
+else:
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SECURE = False
+
 SESSION_COOKIE_HTTPONLY = True
-# If using HTTP (local dev), keep this False. If HTTPS, set to True.
-SESSION_COOKIE_SECURE = False 
-SESSION_COOKIE_NAME = 'sessionid'
-
-CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_COOKIE_HTTPONLY = False # Must be False so React can read it
+CSRF_COOKIE_HTTPONLY = False 
 
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 1 day in seconds
@@ -175,9 +193,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 #cloudinary settings
 # Cloudinary Configuration
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dijpeivsc',  # Replace with your cloud name
-    'API_KEY': '289636937827363',        # Replace with your API key
-    'API_SECRET': '1W6lpaLXj_imPzhlt8domJOMoFM',  # Replace with your API secret
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'dijpeivsc'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', '289636937827363'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', '1W6lpaLXj_imPzhlt8domJOMoFM'),
 }
 
 # Media files storage
@@ -186,6 +204,7 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 #media files (for QR code images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
