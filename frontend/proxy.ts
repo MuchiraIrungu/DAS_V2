@@ -1,4 +1,3 @@
-// proxy.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -7,7 +6,8 @@ const roleRoutes: Record<string, string[]> = {
   teacher: ["/dashboard", "/attendance", "/students"],
 };
 
-export function proxy(request: NextRequest) {  // renamed from "middleware"
+// ✅ keep the export named "middleware" not "proxy"
+export function middleware(request: NextRequest) {
   const sessionid = request.cookies.get("sessionid")?.value;
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
