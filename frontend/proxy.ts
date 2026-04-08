@@ -1,3 +1,4 @@
+// proxy.ts
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
@@ -6,24 +7,19 @@ const roleRoutes: Record<string, string[]> = {
   teacher: ["/dashboard", "/attendance", "/students"],
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {  // renamed from "middleware"
   const sessionid = request.cookies.get("sessionid")?.value;
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
 
-  // Allow unauthorized page
-  if (pathname === "/unauthorized") {
-    return NextResponse.next();
-  }
+  if (pathname === "/unauthorized") return NextResponse.next();
 
-  // Root redirect
   if (pathname === "/") {
     const url = request.nextUrl.clone();
     url.pathname = sessionid ? "/dashboard" : "/auth/login";
     return NextResponse.redirect(url);
   }
 
-  // Protect matched routes only
   if (!sessionid) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

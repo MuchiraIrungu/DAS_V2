@@ -27,16 +27,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-51$9d@(c!6f3_$c3@(orl!0p@#gb*ta5egbk3jgir(c513fn0e')
 
-DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+DEBUG = os.environ.get('DEBUG', 'False') == 'False'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,das-v2.vercel.app').split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,das-v2.vercel.app,das-v2.onrender.com').split(',')
 
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "das-v2.vercel.app",
+    "https://das-v2.vercel.app",
 ]
 frontend_url = os.environ.get('FRONTEND_URL')
 if frontend_url:
