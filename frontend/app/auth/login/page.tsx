@@ -53,6 +53,7 @@ export default function LoginPage() {
         const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`,{
             credentials:'include'
         });
+        if (!csrfRes.ok) throw new Error("CSRF failed");
 
         const { csrfToken } = await csrfRes.json();
 
@@ -69,7 +70,7 @@ export default function LoginPage() {
 
         const data = await response.json();
 
-        if (response.status === 200) {
+        if (response.status === 200 || response.ok) {
             document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
             const role = data.user.role 
             const storeRole = localStorage.setItem('role', role)
