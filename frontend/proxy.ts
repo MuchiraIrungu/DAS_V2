@@ -1,4 +1,4 @@
- // proxy.ts  (in project root)
+// proxy.ts   (must be at the same level as app/ folder)
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -8,31 +8,28 @@ const roleRoutes: Record<string, string[]> = {
 };
 
 export function proxy(request: NextRequest) {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const cookies = Object.fromEntries(
-    cookieHeader.split("; ").map((c) => {
-      const [k, v] = c.split("=");
-      return [k, v];
-    })
-  );
-
-  const sessionid = cookies["sessionid"];
-  const userRole = cookies["user_role"] || "";
-
   const pathname = request.nextUrl.pathname;
 
-  // Allow public paths
+  // 1. Always allow static assets, API routes, and _next files
   if (
-    pathname.startsWith("/auth") ||
-    pathname === "/unauthorized" ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||   // usually allow API routes too
-    pathname.includes(".")           // static assets
+    pathname.startsWith("/api") ||
+    pathname === "/favicon.ico" ||
+    pathname.includes(".")   // covers .png, .jpg, .css, etc.
   ) {
     return NextResponse.next();
   }
 
-  // Root redirect
+  // 2. Public routes (no protection)
+  if (pathname.startsWith("/auth") || pathname === "/unauthorized") {
+    return NextResponse.next();
+  }
+
+  // 3. Get cookies safely
+  const sessionid = request.cookies.get("sessionid")?.value;
+  const userRole = request.cookies.get("user_role")?.value || "";
+
+  // 4. Root path special handling
   if (pathname === "/") {
     if (!sessionid) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
@@ -40,12 +37,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // Auth guard
+  // 5. Auth guard
   if (!sessionid) {
     return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // Role-based guard
+  // 6. Role-based guard
   const allowed = roleRoutes[userRole] || [];
   const isAllowed = allowed.some((route) => pathname.startsWith(route));
 
@@ -53,18 +50,13 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
+  // 7. If everything is fine, continue
   return NextResponse.next();
 }
 
-// Optional: Limit which paths the proxy runs on (highly recommended to avoid running on every asset)
+// This is very important on Vercel
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico, etc.
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };
