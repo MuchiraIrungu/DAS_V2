@@ -71,17 +71,13 @@ export default function LoginPage() {
         const data = await response.json();
 
         if (response.status === 200 || response.ok) {
+            const role = data.user.role;
+
             document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
-            const role = data.user.role 
-            const storeRole = localStorage.setItem('role', role)
+            localStorage.setItem('role', role)
 
             await new Promise(resolve => setTimeout(resolve, 100));
-
-            if (role === 'admin' || role === 'Admin' || role === 'ADMIN'){
-                window.location.href = '/dashboard';
-            }else{
-                window.location.href = '/attendance';
-            }
+            window.location.href = role.toLowerCase() === 'admin' ? '/dashboard' : '/attendance';
         } else {
             setLoginError(data.error || "Invalid credentials");
         }
