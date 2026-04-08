@@ -7,7 +7,7 @@ const roleRoutes: Record<string, string[]> = {
 };
 
 
-export function proxy(request: NextRequest) {
+export function middleware(request: NextRequest) {
   const sessionid = request.cookies.get("sessionid")?.value;
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
