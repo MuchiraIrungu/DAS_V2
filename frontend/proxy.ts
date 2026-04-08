@@ -1,13 +1,13 @@
-// app/proxy.ts
-import { redirect } from "next/navigation";
+ // proxy.ts  (in project root)
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 const roleRoutes: Record<string, string[]> = {
   admin: ["/dashboard", "/attendance", "/reports", "/students"],
   teacher: ["/dashboard", "/attendance", "/students"],
 };
 
-export default function proxy(request: Request) {
-  // Parse cookies manually (Edge runtime)
+export function proxy(request: NextRequest) {
   const cookieHeader = request.headers.get("cookie") ?? "";
   const cookies = Object.fromEntries(
     cookieHeader.split("; ").map((c) => {
@@ -17,38 +17,54 @@ export default function proxy(request: Request) {
   );
 
   const sessionid = cookies["sessionid"];
-  const userRole = cookies["user_role"];
+  const userRole = cookies["user_role"] || "";
 
-  const url = new URL(request.url);
-  const pathname = url.pathname;
+  const pathname = request.nextUrl.pathname;
 
-  // 1. Public / static passthrough
-  if (pathname.startsWith("/auth") || pathname === "/unauthorized" || pathname.startsWith("/_next")) {
-    return; // allow
+  // Allow public paths
+  if (
+    pathname.startsWith("/auth") ||
+    pathname === "/unauthorized" ||
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||   // usually allow API routes too
+    pathname.includes(".")           // static assets
+  ) {
+    return NextResponse.next();
   }
 
-  // 2. Root redirect
+  // Root redirect
   if (pathname === "/") {
-    if (sessionid) {
-      throw redirect("/dashboard");
-    } else {
-      throw redirect("/auth/login");
+    if (!sessionid) {
+      return NextResponse.redirect(new URL("/auth/login", request.url));
     }
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 3. Auth guard
+  // Auth guard
   if (!sessionid) {
-    throw redirect("/auth/login");
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   }
 
-  // 4. RBAC
-  const allowed = roleRoutes[userRole ?? ""] || [];
-  if (!allowed.some((route) => pathname.startsWith(route))) {
-    throw redirect("/unauthorized");
+  // Role-based guard
+  const allowed = roleRoutes[userRole] || [];
+  const isAllowed = allowed.some((route) => pathname.startsWith(route));
+
+  if (!isAllowed) {
+    return NextResponse.redirect(new URL("/unauthorized", request.url));
   }
 
-  // 5. allow access
-  return;
+  return NextResponse.next();
 }
 
-// No matcher needed; Proxy runs automatically for all routes
+// Optional: Limit which paths the proxy runs on (highly recommended to avoid running on every asset)
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico, etc.
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
+  ],
+};
