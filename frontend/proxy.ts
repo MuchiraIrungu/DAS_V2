@@ -6,8 +6,8 @@ const roleRoutes: Record<string, string[]> = {
   teacher: ["/dashboard", "/attendance", "/students"],
 };
 
-// ✅ keep the export named "middleware" not "proxy"
-export function middleware(request: NextRequest) {
+
+export function proxy(request: NextRequest) {
   const sessionid = request.cookies.get("sessionid")?.value;
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
