@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 export function middleware(request) {
   // If this fails, the problem is your Project Environment/Dependencies, 
   // not your code logic.
+  //
   return NextResponse.next();
 }
 
