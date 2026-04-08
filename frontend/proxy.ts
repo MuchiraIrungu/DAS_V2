@@ -30,6 +30,7 @@ export function proxy(request: NextRequest) {
   const userRole = request.cookies.get("user_role")?.value || "";
 
   // 4. Root path special handling
+  //
   if (pathname === "/") {
     if (!sessionid) {
       return NextResponse.redirect(new URL("/auth/login", request.url));
