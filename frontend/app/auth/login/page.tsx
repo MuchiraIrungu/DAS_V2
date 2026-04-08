@@ -75,10 +75,12 @@ export default function LoginPage() {
             const role = data.user.role 
             const storeRole = localStorage.setItem('role', role)
 
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             if (role === 'admin' || role === 'Admin' || role === 'ADMIN'){
-                router.push('/dashboard')
+                window.location.href = '/dashboard';
             }else{
-                router.push('/attendance')
+                window.location.href = '/attendance';
             }
         } else {
             setLoginError(data.error || "Invalid credentials");
