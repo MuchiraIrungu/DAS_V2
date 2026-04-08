@@ -76,7 +76,7 @@ export default function LoginPage() {
             document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
             localStorage.setItem('role', role)
 
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 300));
             window.location.href = role.toLowerCase() === 'admin' ? '/dashboard' : '/attendance';
         } else {
             setLoginError(data.error || "Invalid credentials");
