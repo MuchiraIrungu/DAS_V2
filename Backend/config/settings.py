@@ -37,11 +37,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://das-v2.vercel.app",
-    "https://*.vercel.app",
 ]
-frontend_url = 'https://das-v2.vercel.app'
-if frontend_url:
-    CORS_ALLOWED_ORIGINS.append(frontend_url)
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
 
 # Application definition
 
@@ -165,11 +165,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "https://das-v2.vercel.app", 
-    "https://*.vercel.app",
+    "https://das-v2.onrender.com",
 ]
-if frontend_url:
-    CORS_ALLOWED_ORIGINS.append(frontend_url)
-    CSRF_TRUSTED_ORIGINS.append(frontend_url)
 
 if not DEBUG:
     SESSION_COOKIE_SAMESITE = 'None'  
