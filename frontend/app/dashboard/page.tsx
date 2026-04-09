@@ -75,7 +75,7 @@ export default function Dashboard() {
 
     useEffect(()=>{
         const fetchUser = async() =>{
-            const res = await fetch(`${API_PATH}/api/auth/me`,{
+            const res = await fetch(`${API_PATH}/api/auth/me/`,{
                 method:'GET',
                 credentials:"include",
             })
