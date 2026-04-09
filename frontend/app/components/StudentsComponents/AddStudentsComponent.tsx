@@ -138,6 +138,10 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
         setLoading(true);
         setError("");
 
+        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`, { credentials: "include" });
+        const { csrfToken } = await csrfRes.json();
+
+
         const payload = new FormData();
         Object.entries(formData).forEach(([key, value]) => {
             if (value !== null && value !== "") {
@@ -151,7 +155,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
 
         // Edit: PATCH to /api/students/{id}/   Add: POST to /api/students/
         const url = isEditMode
-            ? `${API_PATH}/${student!.id}/`
+            ? `${API_PATH}/api/students/${student!.id}/`
             : `${API_PATH}/api/students/`;
         const method = isEditMode ? "PATCH" : "POST";
         const expectedStatus = isEditMode ? 200 : 201;
@@ -160,7 +164,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
             const res = await fetch(url, {
                 method,
                 credentials: "include",
-                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                headers: { "X-CSRFToken": csrfToken },
                 body: payload,
             });
 
@@ -174,10 +178,10 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
                 if (!isEditMode) {
                     const studentId = data.data?.id;
                     if (studentId) {
-                        await fetch(`${API_PATH}/api/students/${studentId}/generate-qr/`, {
+                        await fetch(`${API_PATH}/students/${studentId}/generate-qr/`, {
                             method: "POST",
                             credentials: "include",
-                            headers: { "X-CSRFToken": getCookie("csrftoken") },
+                            headers: { "X-CSRFToken": csrfToken },
                         });
                     }
                 }
