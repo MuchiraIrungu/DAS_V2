@@ -17,6 +17,29 @@ interface RequestAccessForm {
     message: string;
 }
 
+function ButtonSpinner() {
+    return (
+        <svg
+            className="animate-spin"
+            style={{ width: 18, height: 18, marginRight: 8, display: "inline-block", verticalAlign: "middle" }}
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+        >
+            <circle
+                className="opacity-25"
+                cx="12" cy="12" r="10"
+                stroke="currentColor" strokeWidth="4"
+            />
+            <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            />
+        </svg>
+    );
+}
+
 export default function LoginPage() {
     const router = useRouter();
     const [formData, setFormData] = useState<LoginForm>({
@@ -36,6 +59,7 @@ export default function LoginPage() {
     const [requestSuccess, setRequestSuccess] = useState("");
     const [requestLoading, setRequestLoading] = useState(false);
     const [loginError, setLoginError] = useState("");
+    const [loginLoading, setLoginLoading] = useState(false);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -48,38 +72,40 @@ export default function LoginPage() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setLoginError("");
+        setLoginLoading(true);
 
-        //fetch token
-        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`,{
-            credentials:'include'
-        });
-        if (!csrfRes.ok) throw new Error("CSRF failed");
+        try {
+            const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`, {
+                credentials: "include",
+            });
+            if (!csrfRes.ok) throw new Error("CSRF failed");
+            const { csrfToken } = await csrfRes.json();
 
-        const { csrfToken } = await csrfRes.json();
+            const response = await fetch(`${API_PATH}/api/auth/login/`, {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrfToken,
+                },
+                body: JSON.stringify(formData),
+            });
 
-        //Login logic
-        const response = await fetch(`${API_PATH}/api/auth/login/`, {
-            method: "POST",
-            credentials: "include",
-            headers: { 
-                "Content-Type": "application/json",
-                "X-CSRFToken": csrfToken, 
-            },
-            body: JSON.stringify(formData),
-        });
+            const data = await response.json();
 
-        const data = await response.json();
-
-        if (response.status === 200 || response.ok) {
-            const role = data.user.role;
-
-            document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
-            localStorage.setItem('role', role)
-
-            await new Promise(resolve => setTimeout(resolve, 300));
-            window.location.href = role.toLowerCase() === 'admin' ? '/dashboard' : '/attendance';
-        } else {
-            setLoginError(data.error || "Invalid credentials");
+            if (response.status === 200 || response.ok) {
+                const role = data.user.role;
+                document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
+                localStorage.setItem("role", role);
+                await new Promise((resolve) => setTimeout(resolve, 300));
+                router.push(role.toLowerCase() === "admin" ? "/dashboard" : "/attendance");
+            } else {
+                setLoginError(data.error || "Invalid credentials");
+                setLoginLoading(false);
+            }
+        } catch {
+            setLoginError("Something went wrong. Please try again.");
+            setLoginLoading(false);
         }
     };
 
@@ -89,15 +115,17 @@ export default function LoginPage() {
         setRequestSuccess("");
         setRequestLoading(true);
 
-        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`,{
-            credentials:'include'
+        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`, {
+            credentials: "include",
         });
-
         const { csrfToken } = await csrfRes.json();
 
         const response = await fetch(`${API_PATH}/api/auth/request-access/`, {
             method: "POST",
-            headers: { "Content-Type": "application/json","X-CSRFToken": csrfToken, },
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken,
+            },
             body: JSON.stringify(requestForm),
         });
 
@@ -116,26 +144,24 @@ export default function LoginPage() {
         }
     };
 
-    useEffect(()=>{
-        const fetchStatus = async() =>{
-            const res = await fetch(`${API_PATH}/api/attendance/system/status/`,{
-                method:'GET',
-                credentials:'include'
-            })
-
+    useEffect(() => {
+        const fetchStatus = async () => {
+            const res = await fetch(`${API_PATH}/api/attendance/system/status/`, {
+                method: "GET",
+                credentials: "include",
+            });
             const data = await res.json();
-            console.log(data)
-        }
-
+            console.log(data);
+        };
         fetchStatus();
-    },[])
+    }, []);
 
     return (
         <>
             <section className="bg-[#d4e3f3] flex min-w-screen min-h-screen justify-center items-center text-black login px-4 py-8">
                 <div className="justify-center items-center text-center font-lexend w-full max-w-sm sm:max-w-md">
                     <Image
-                        className="black:invert bg-[#d4e3f3] mb-2 lg:mb-4 mx-auto rounded-2xl object-cover shrink-0 "
+                        className="black:invert bg-[#d4e3f3] mb-2 lg:mb-4 mx-auto rounded-2xl object-cover shrink-0"
                         src="/logo2.jpg"
                         alt="Next.js logo"
                         width={130}
@@ -147,7 +173,9 @@ export default function LoginPage() {
 
                     <div className="bg-[#f8f9fa] w-full rounded-3xl pt-8 lg:pt-10 px-5 pb-5 mt-7 lg:mt-10 mb-5 justify-center items-start text-start shadow-[0px_48px_100px_0px_rgba(17,12,46,0.15)]">
                         <h3 className="text-lg lg:text-xl font-bold">Welcome Back</h3>
-                        <span className="text-xs lg:text-sm text-[#adb5bd]">Log in to manage your classroom attendance</span>
+                        <span className="text-xs lg:text-sm text-[#adb5bd]">
+                            Log in to manage your classroom attendance
+                        </span>
 
                         {loginError && (
                             <div className="mt-3 px-4 py-2 bg-red-50 border border-red-100 text-red-500 rounded-xl text-xs">
@@ -157,7 +185,9 @@ export default function LoginPage() {
 
                         <form onSubmit={handleSubmit} className="mt-2">
                             <div className="flex flex-col gap-1.5 login-field">
-                                <label htmlFor="email" className="text-sm lg:text-base">Email Address</label>
+                                <label htmlFor="email" className="text-sm lg:text-base">
+                                    Email Address
+                                </label>
                                 <input
                                     type="text"
                                     name="email"
@@ -165,10 +195,13 @@ export default function LoginPage() {
                                     className="w-full text-sm lg:text-base text-gray-800"
                                     value={formData.email}
                                     onChange={handleChange}
+                                    disabled={loginLoading}
                                 />
                             </div>
                             <div className="flex flex-col gap-1.5 mb-4 login-field mt-3">
-                                <label htmlFor="password" className="text-sm lg:text-base">Password</label>
+                                <label htmlFor="password" className="text-sm lg:text-base">
+                                    Password
+                                </label>
                                 <input
                                     type="password"
                                     name="password"
@@ -176,22 +209,46 @@ export default function LoginPage() {
                                     className="w-full text-sm lg:text-base"
                                     value={formData.password}
                                     onChange={handleChange}
+                                    disabled={loginLoading}
                                 />
                             </div>
                             <div className="flex flex-row justify-between text-xs lg:text-sm items-center mb-4">
-                                <label htmlFor="rememberMe" className="text-[#33415c] flex items-center gap-1 cursor-pointer">
+                                <label
+                                    htmlFor="rememberMe"
+                                    className="text-[#33415c] flex items-center gap-1 cursor-pointer"
+                                >
                                     <input
                                         type="radio"
                                         id="rememberMe"
                                         checked={formData.remember_me}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, remember_me: e.target.checked }))}
-                                    /> Remember me
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({ ...prev, remember_me: e.target.checked }))
+                                        }
+                                    />{" "}
+                                    Remember me
                                 </label>
-                                <a href="" className="text-[#1e88e5]">Forgot password?</a>
+                                <a href="" className="text-[#1e88e5]">
+                                    Forgot password?
+                                </a>
                             </div>
 
-                            <button className="login-btn h-12 lg:h-[6vh] bg-[#1e88e5] w-full rounded-2xl text-white mb-5 text-sm lg:text-base font-medium">
-                                Login to Dashboard →
+                            <button
+                                type="submit"
+                                disabled={loginLoading}
+                                className={`login-btn h-12 lg:h-[6vh] w-full rounded-2xl text-white mb-5 text-sm lg:text-base font-medium flex items-center justify-center transition-all duration-200
+                                    ${loginLoading
+                                        ? "bg-[#5aabee] cursor-not-allowed opacity-80"
+                                        : "bg-[#1e88e5] hover:bg-[#1976d2] cursor-pointer"
+                                    }`}
+                            >
+                                {loginLoading ? (
+                                    <>
+                                        <ButtonSpinner />
+                                        Signing in...
+                                    </>
+                                ) : (
+                                    "Login to Dashboard →"
+                                )}
                             </button>
                         </form>
 
@@ -243,11 +300,11 @@ export default function LoginPage() {
                             background: "rgba(230, 237, 232, 0.72)",
                             backdropFilter: "blur(40px) saturate(200%)",
                             WebkitBackdropFilter: "blur(40px) saturate(200%)",
-                            boxShadow: "0 8px 32px rgba(31, 38, 135, 0.15), inset 0 1px 0 rgba(255,255,255,0.8)",
+                            boxShadow:
+                                "0 8px 32px rgba(31, 38, 135, 0.15), inset 0 1px 0 rgba(255,255,255,0.8)",
                             border: "1px solid rgba(255, 255, 255, 0.6)",
                         }}
                     >
-                        {/* Close button */}
                         <button
                             onClick={() => setShowRequestModal(false)}
                             className="absolute top-4 right-4 w-7 h-7 rounded-full flex items-center justify-center text-gray-500 font-medium hover:bg-gray-100 transition-colors text-lg leading-none"
@@ -285,7 +342,6 @@ export default function LoginPage() {
                                     style={{ backdropFilter: "blur(8px)" }}
                                 />
                             </div>
-
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs sm:text-sm text-[#33415c]">Email Address</label>
                                 <input
@@ -299,7 +355,6 @@ export default function LoginPage() {
                                     style={{ backdropFilter: "blur(8px)" }}
                                 />
                             </div>
-
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs sm:text-sm text-[#33415c]">School Name</label>
                                 <input
@@ -313,7 +368,6 @@ export default function LoginPage() {
                                     style={{ backdropFilter: "blur(8px)" }}
                                 />
                             </div>
-
                             <div className="flex flex-col gap-1.5">
                                 <label className="text-xs sm:text-sm text-[#33415c]">
                                     Message <span className="text-[#adb5bd]">(optional)</span>
@@ -328,13 +382,19 @@ export default function LoginPage() {
                                     style={{ backdropFilter: "blur(8px)" }}
                                 />
                             </div>
-
                             <button
                                 type="submit"
                                 disabled={requestLoading}
-                                className="mt-1 h-11 sm:h-12 bg-[#1e88e5] text-white rounded-2xl text-sm font-medium hover:bg-[#1976d2] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                                className="mt-1 h-11 sm:h-12 bg-[#1e88e5] text-white rounded-2xl text-sm font-medium hover:bg-[#1976d2] transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center"
                             >
-                                {requestLoading ? "Submitting..." : "Submit Request →"}
+                                {requestLoading ? (
+                                    <>
+                                        <ButtonSpinner />
+                                        Submitting...
+                                    </>
+                                ) : (
+                                    "Submit Request →"
+                                )}
                             </button>
                         </form>
                     </div>
