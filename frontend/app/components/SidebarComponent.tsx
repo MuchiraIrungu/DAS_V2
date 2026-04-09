@@ -139,9 +139,10 @@ export default function Sidebar() {
 
             if (res.status === 200) {
                 localStorage.removeItem("role");
+                sessionStorage.clear();
+                document.cookie = "user_role=; path=/; max-age=0; SameSite=Lax";
                 // Small delay so the animation feels intentional
                 await new Promise((resolve) => setTimeout(resolve, 800));
-                document.cookie = "user_role=; path=/; max-age=0; SameSite=Lax";
                 
                 router.push("/auth/login");
             } else {
