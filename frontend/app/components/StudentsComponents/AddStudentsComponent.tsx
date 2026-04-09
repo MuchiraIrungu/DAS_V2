@@ -178,10 +178,14 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
                 if (!isEditMode) {
                     const studentId = data.data?.id;
                     if (studentId) {
-                        await fetch(`${API_PATH}/students/${studentId}/generate-qr/`, {
+
+                        const qrCsrfRes = await fetch(`${API_PATH}/api/auth/csrf/`, { credentials: "include" });
+                        const { csrfToken: qrCsrfToken } = await qrCsrfRes.json();
+
+                        await fetch(`${API_PATH}/api/students/${studentId}/generate-qr/`, {
                             method: "POST",
                             credentials: "include",
-                            headers: { "X-CSRFToken": csrfToken },
+                            headers: { "X-CSRFToken": qrCsrfToken },
                         });
                     }
                 }
