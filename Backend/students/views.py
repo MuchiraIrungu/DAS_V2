@@ -26,6 +26,7 @@ from io import BytesIO
 from django.core.files import File
 import json
 import base64
+import cloudinary.uploader
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.shortcuts import get_object_or_404
@@ -1077,36 +1078,20 @@ def student_performance_summary(request, student_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def generate_qr_code(request, student_id):
-    """
-    POST /api/students/{student_id}/generate-qr/
-    
-    Generate QR code for a student
-    """
     try:
         student = Student.objects.get(pk=student_id)
     except Student.DoesNotExist:
-        return Response(
-            {
-                'success': False,
-                'error': 'Student not found'
-            },
-            status=status.HTTP_404_NOT_FOUND
-        )
-    
-    # Create QR data (encrypted)
+        return Response({'success': False, 'error': 'Student not found'}, status=404)
+
     qr_data = {
         'student_id': student.id,
         'admission_number': student.admission_number,
         'timestamp': str(timezone.now())
     }
-    
-    # Convert to JSON string
     qr_string = json.dumps(qr_data)
-    
-    # Encrypt the data (simple base64 for MVP, use proper encryption in production)
     encrypted_data = base64.b64encode(qr_string.encode()).decode()
-    
-    # Generate QR code image
+
+    # Generate QR image into buffer
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -1115,36 +1100,44 @@ def generate_qr_code(request, student_id):
     )
     qr.add_data(encrypted_data)
     qr.make(fit=True)
-    
     img = qr.make_image(fill_color="black", back_color="white")
-    
-    # Save to BytesIO
+
     buffer = BytesIO()
     img.save(buffer, format='PNG')
     buffer.seek(0)
-    
-    # Save to student model
-    file_name = f'qr_{student.admission_number}.png'
-    student.qr_code = encrypted_data
-    student.qr_code_image = File(buffer, name=file_name)
-    student.save(update_fields=['qr_code', 'qr_code_image'])
 
+    # ✅ Upload directly to Cloudinary
+    try:
+        upload_result = cloudinary.uploader.upload(
+            buffer,
+            folder='qr_codes',
+            public_id=f'qr_{student.admission_number}',
+            overwrite=True,
+            resource_type='image',
+        )
+    except Exception as e:
+        return Response(
+            {'success': False, 'error': f'Cloudinary upload failed: {str(e)}'},
+            status=500
+        )
+
+    # Save the Cloudinary public_id to the CloudinaryField
+    student.qr_code = encrypted_data
+    student.qr_code_image = upload_result['public_id']
+    student.save(update_fields=['qr_code', 'qr_code_image'])
     student.refresh_from_db()
-    
-    return Response(
-        {
-            'success': True,
-            'message': 'QR code generated successfully',
-            'data': {
-                'student_id': student.id,
-                'admission_number': student.admission_number,
-                'full_name': student.full_name,
-                'qr_code_data': encrypted_data,
-                'qr_code_image_url': student.qr_code_image.url if student.qr_code_image else None
-            }
-        },
-        status=status.HTTP_200_OK
-    )
+
+    return Response({
+        'success': True,
+        'message': 'QR code generated successfully',
+        'data': {
+            'student_id': student.id,
+            'admission_number': student.admission_number,
+            'full_name': student.full_name,
+            'qr_code_data': encrypted_data,
+            'qr_code_image_url': student.qr_code_image.url if student.qr_code_image else None
+        }
+    }, status=200)
 
 
 @api_view(['POST'])

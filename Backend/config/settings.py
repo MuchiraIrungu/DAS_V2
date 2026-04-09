@@ -175,6 +175,11 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.vercel.app",
 ]
 
+# Render proxy — tells Django requests are HTTPS even though 
+# the internal hop from the load balancer is HTTP
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+
 if not DEBUG:
     SESSION_COOKIE_SAMESITE = 'None'  
     SESSION_COOKIE_SECURE = True     
@@ -188,11 +193,9 @@ else:
 
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False 
-
-# Session settings
-SESSION_COOKIE_AGE = 86400  # 1 day in seconds
-SESSION_SAVE_EVERY_REQUEST = True
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_AGE = 28800  # 1 day in seconds
+SESSION_SAVE_EVERY_REQUEST = True
 
 # File upload settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
@@ -201,9 +204,9 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
 #cloudinary settings
 # Cloudinary Configuration
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'dijpeivsc'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', '289636937827363'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', '1W6lpaLXj_imPzhlt8domJOMoFM'),
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
 # Media files storage
