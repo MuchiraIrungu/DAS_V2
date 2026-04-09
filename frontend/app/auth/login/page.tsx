@@ -97,6 +97,8 @@ export default function LoginPage() {
                 const role = data.user.role;
                 document.cookie = `user_role=${data.user.role}; path=/; SameSite=Lax`;
                 localStorage.setItem("role", role);
+
+                sessionStorage.setItem("session_active", "true");
                 await new Promise((resolve) => setTimeout(resolve, 300));
                 router.push(role.toLowerCase() === "admin" ? "/dashboard" : "/attendance");
             } else {
