@@ -161,7 +161,6 @@ class Student(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     qr_code = models.CharField(max_length=500, blank=True, null=True)  # Store QR code data
     qr_code_image = CloudinaryField('qr_codes', blank=True, null=True, folder='qr_codes')
-    qr_code_image = models.ImageField(upload_to='qr_codes/', blank=True, null=True)  # QR image
     
     class Meta:
         ordering = ['first_name', 'last_name']

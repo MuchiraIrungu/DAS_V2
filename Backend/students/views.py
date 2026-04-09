@@ -1126,7 +1126,10 @@ def generate_qr_code(request, student_id):
     # Save to student model
     file_name = f'qr_{student.admission_number}.png'
     student.qr_code = encrypted_data
-    student.qr_code_image.save(file_name, File(buffer), save=True)
+    student.qr_code_image = File(buffer, name=file_name)
+    student.save(update_fields=['qr_code', 'qr_code_image'])
+
+    student.refresh_from_db()
     
     return Response(
         {
