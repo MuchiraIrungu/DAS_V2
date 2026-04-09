@@ -31,19 +31,18 @@ export default function Sidebar() {
     const SidebarItems = isAdmin ? adminItems : teacherItems;
 
     const handleLogout = async () => {
-        const getCookie = (name: string): string => {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop()?.split(';').shift() || '';
-            return '';
-        };
+
+        const csrfRes = await fetch(`${API_PATH}/api/auth/csrf/`, {
+            credentials: "include",
+        });
+        const { csrfToken } = await csrfRes.json();
 
         const res = await fetch(`${API_PATH}/api/auth/logout/`, {
             method: 'POST',
             credentials: "include",
             headers: {
                 "Content-Type": 'application/json',
-                "X-CSRFToken": getCookie('csrftoken'),
+                "X-CSRFToken": csrfToken,
             },
         });
 
