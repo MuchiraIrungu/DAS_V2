@@ -151,8 +151,8 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
 
         // Edit: PATCH to /api/students/{id}/   Add: POST to /api/students/
         const url = isEditMode
-            ? `http://localhost:8000/api/students/${student!.id}/`
-            : `http://localhost:8000/api/students/`;
+            ? `${API_PATH}/${student!.id}/`
+            : `${API_PATH}/api/students/`;
         const method = isEditMode ? "PATCH" : "POST";
         const expectedStatus = isEditMode ? 200 : 201;
 
@@ -174,7 +174,7 @@ export default function AddStudentModal({ isOpen, onClose, onSuccess, student }:
                 if (!isEditMode) {
                     const studentId = data.data?.id;
                     if (studentId) {
-                        await fetch(`http://localhost:8000/api/students/${studentId}/generate-qr/`, {
+                        await fetch(`${API_PATH}/api/students/${studentId}/generate-qr/`, {
                             method: "POST",
                             credentials: "include",
                             headers: { "X-CSRFToken": getCookie("csrftoken") },
