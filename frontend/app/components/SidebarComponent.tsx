@@ -141,6 +141,8 @@ export default function Sidebar() {
                 localStorage.removeItem("role");
                 // Small delay so the animation feels intentional
                 await new Promise((resolve) => setTimeout(resolve, 800));
+                document.cookie = "user_role=; path=/; max-age=0; SameSite=Lax";
+                
                 router.push("/auth/login");
             } else {
                 setLoggingOut(false);

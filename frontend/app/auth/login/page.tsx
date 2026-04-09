@@ -95,7 +95,7 @@ export default function LoginPage() {
 
             if (response.status === 200 || response.ok) {
                 const role = data.user.role;
-                document.cookie = `user_role=${data.user.role}; path=/; max-age=604800; SameSite=Lax`;
+                document.cookie = `user_role=${data.user.role}; path=/; SameSite=Lax`;
                 localStorage.setItem("role", role);
                 await new Promise((resolve) => setTimeout(resolve, 300));
                 router.push(role.toLowerCase() === "admin" ? "/dashboard" : "/attendance");
