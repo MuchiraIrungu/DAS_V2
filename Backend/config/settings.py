@@ -38,8 +38,6 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,das-v2.verc
 
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
     "https://das-v2.vercel.app",
 ]
 
@@ -168,8 +166,6 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 #CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
     "https://das-v2.vercel.app", 
     "https://das-v2.onrender.com",
     "https://*.vercel.app",
@@ -177,12 +173,12 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Render proxy — tells Django requests are HTTPS even though 
 # the internal hop from the load balancer is HTTP
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-USE_X_FORWARDED_HOST = True
+#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+#USE_X_FORWARDED_HOST = True
 
-SESSION_COOKIE_SAMESITE = 'None'  
+SESSION_COOKIE_SAMESITE = 'Lax'  
 SESSION_COOKIE_SECURE = True     
-CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SECURE = True
 
 
