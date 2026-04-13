@@ -7,6 +7,14 @@
     {
       "source": "/api/:path*",
       "destination": "https://das-v2.onrender.com/api/:path*/"
+    },
+    {
+      "source": "/admin/:path*/",
+      "destination": "https://das-v2.onrender.com/admin/:path*/"
+    },
+    {
+      "source": "/admin",
+      "destination": "https://das-v2.onrender.com/admin/"
     }
   ]
 }

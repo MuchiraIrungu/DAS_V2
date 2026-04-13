@@ -171,10 +171,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://*.vercel.app",
 ]
 
-# Render proxy — tells Django requests are HTTPS even though 
-# the internal hop from the load balancer is HTTP
-#SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-#USE_X_FORWARDED_HOST = True
 
 SESSION_COOKIE_SAMESITE = 'Lax'  
 SESSION_COOKIE_SECURE = True     
