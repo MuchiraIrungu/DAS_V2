@@ -22,7 +22,7 @@ const adminItems = [
     { index: 3, icon: Users, name: "Students", href: "/students" },
     { index: 4, icon: FileChartColumn, name: "Reports", href: "/reports" },
     { index: 5, icon: Settings, name: "Settings", href: "/settings" },
-    { index: 6, icon: Shield, name: "Django Admin", href: `/admin/` },
+    { index: 6, icon: Shield, name: "Django Admin", href: `https://das-v2.onrender.com/admin/` },
 ];
 
 const teacherItems = [
