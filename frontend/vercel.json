@@ -13,7 +13,7 @@
       "destination": "https://das-v2.onrender.com/admin/:path*/"
     },
     {
-      "source": "/admin",
+      "source": "/admin/",
       "destination": "https://das-v2.onrender.com/admin/"
     }
   ]

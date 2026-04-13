@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const roleRoutes: Record<string, string[]> = {
   admin: ["/dashboard", "/attendance", "/reports", "/students"],
-  teacher: ["/dashboard", "/attendance", "/students"],
+  teacher: ["/attendance", "/students"],
 };
 
 export function proxy(request: NextRequest) {
