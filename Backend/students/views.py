@@ -174,16 +174,13 @@ def current_user(request):
     GET /api/auth/me/
     """
     serializer = UserSerializer(request.user)
-    data = serializer.data
-
-    # Add teacher profile if exists
-    if hasattr(request.user, 'teacher_profile'):  
-        teacher = request.user.teacher_profile
-        data['teacher'] = TeacherListSerializer(teacher).data
-        data['school'] = SchoolSerializer(teacher.school).data if teacher.school else None
-        data['classes'] = ClassSerializer(teacher.classes.all(), many=True).data  # if ManyToMany
-
-    return Response({'success': True, 'user': data})
+    return Response(
+        {
+            'success': True,
+            'user': serializer.data
+        },
+        status=status.HTTP_200_OK
+    )
 
 
 @api_view(['POST'])
@@ -339,15 +336,6 @@ class StudentListCreateView(generics.ListCreateAPIView):
         queryset = Student.objects.select_related('current_class').all()
         
         # Filter by search query
-
-        if not self.request.user.is_staff:
-            teacher = getattr(self.request.user, 'teacher_profile', None)
-        
-        # If the relation name is different, change 'teacher_profile' accordingly
-        if teacher:
-            queryset = queryset.filter(
-                current_class__in=teacher.classes.all()
-            )
         
         search = self.request.query_params.get('search', None)
         if search:
@@ -579,22 +567,6 @@ class ClassListCreateView(generics.ListCreateAPIView):
             },
             status=status.HTTP_400_BAD_REQUEST
         )
-    
-    def get_queryset(self):
-        queryset = super().get_queryset()  
-        
-        if not self.request.user.is_staff:
-            teacher = getattr(self.request.user, 'teacher_profile', None)
-            if teacher:
-                queryset = queryset.filter(class_teacher=teacher)   # ← Change field name if needed
-
-        # Support ?teacher_only=true from frontend
-        if self.request.query_params.get('teacher_only') == 'true':
-            teacher = getattr(self.request.user, 'teacher_profile', None)
-            if teacher:
-                queryset = queryset.filter(class_teacher=teacher)
-
-        return queryset
 
 
 class ClassDetailView(generics.RetrieveUpdateDestroyAPIView):

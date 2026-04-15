@@ -6,20 +6,68 @@ from .models import User, School, Class, Student, Teacher, Grade, Term, Subject,
 from rest_framework import serializers
 
 class UserSerializer(serializers.ModelSerializer):
-    """Serializer for User model"""
-    full_name = serializers.ReadOnlyField()
+    """
+    Serializer for User model.
     
+    When the user is a Teacher, `teacher_profile_data` is populated
+    with their assigned classes and school (derived via the class FK).
+    For Admins and other roles it returns None — the frontend checks
+    the `role` field to decide how to behave.
+    """
+    full_name = serializers.ReadOnlyField()
+    teacher_profile_data = serializers.SerializerMethodField()
+ 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'full_name', 'role', 'phone', 'photo', 'is_active',
-            'date_joined'
+            'date_joined',
+            'teacher_profile_data',   # <-- new field
         ]
         extra_kwargs = {
             'password': {'write_only': True}
         }
-    
+ 
+    def get_teacher_profile_data(self, obj):
+        """
+        Return teacher-specific data when the user has a teacher_profile.
+ 
+        Chain used:  User -> Teacher (teacher_profile) -> classes (M2M) -> school (FK)
+ 
+        No model changes required — all relationships already exist.
+        """
+        try:
+            teacher = obj.teacher_profile          # related_name set on Teacher.user
+        except Exception:
+            return None                            # user is not a teacher
+ 
+        classes_qs = teacher.classes.select_related('school').all()
+ 
+        # Derive school from first class (Teacher has no direct school FK).
+        # If the teacher has no classes yet, school will be None.
+        first_class = classes_qs.first()
+        school = first_class.school if first_class else None
+ 
+        return {
+            'teacher_id': teacher.id,
+            'employee_id': teacher.employee_id,
+            'subject_specialization': teacher.subject_specialization,
+            'classes': [
+                {
+                    'id': c.id,
+                    'name': c.name,
+                    'grade_level': c.grade_level,
+                    'section': c.section,
+                }
+                for c in classes_qs
+            ],
+            'school': {
+                'id': school.id,
+                'name': school.name,
+            } if school else None,
+        }
+ 
     def create(self, validated_data):
         """Create user with encrypted password"""
         password = validated_data.pop('password', None)
@@ -28,6 +76,7 @@ class UserSerializer(serializers.ModelSerializer):
             user.set_password(password)
         user.save()
         return user
+ 
 
 
 class SchoolSerializer(serializers.ModelSerializer):
