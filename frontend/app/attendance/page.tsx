@@ -7,7 +7,7 @@ import {
   History,
   Printer,
   SendHorizonal,
-  SquareArrowDownLeft,
+  LogOut,
   CheckCircle,
   XCircle,
   Loader2,
@@ -41,18 +41,31 @@ interface IndividualStudent {
   photo: string | null;
 }
 
-// Shape of what /api/auth/me/ returns for a teacher.
-// Adjust field names here if your API uses different keys.
-interface TeacherProfile {
-  class_id: number;
-  class_name: string;
+// Shape of /api/auth/me/ — matches your actual login response structure
+interface AuthMeResponse {
+  success: boolean;
+  user: {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+    role: string;
+    phone: string | null;
+    photo: string | null;
+    is_active: boolean;
+    date_joined: string;
+  };
 }
 
-interface AuthMeResponse {
-  id: number;
-  role: string;
-  full_name: string;
-  teacher_profile?: TeacherProfile; // only present when role === "teacher"
+// Shape of /api/dashboard/teacher/?teacher_id=X
+interface TeacherDashboardResponse {
+  success: boolean;
+  data: {
+    assigned_classes: Array<{ id: number; name: string; [key: string]: unknown }>;
+    todays_tasks: unknown[];
+  };
 }
 
 const getCookie = (name: string): string => {
@@ -81,31 +94,35 @@ export default function Attendance() {
   const [selectedStudent, setSelectedStudent] = useState<IndividualStudent | null>(null);
   const [showRecord, setShowRecord] = useState(false);
 
-  // Role-awareness state
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [isClassLocked, setIsClassLocked] = useState(false); // true when teacher's class is pre-set
+  // ── Dynamic user & school state ──────────────────────────────────────────
+  const [currentUser, setCurrentUser] = useState<AuthMeResponse["user"] | null>(null);
+  const [schoolName, setSchoolName] = useState<string>("EduTrack");
+  const [isClassLocked, setIsClassLocked] = useState(false);
+  const [loggedInTeacherId, setLoggedInTeacherId] = useState<number | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   const presentCount = students.filter((s) => s.status === "P").length;
   const absentCount = students.filter((s) => s.status === "A").length;
 
-  // ── Step 1: Resolve role and, for teachers, fetch their assigned class ──
-  useEffect(() => {
-    const role =
-      typeof window !== "undefined" ? localStorage.getItem("role") : null;
-    setUserRole(role);
-
-    const isTeacher =
-      role?.toLowerCase() === "teacher";
-
-    if (!isTeacher) {
-      // Admin / Headteacher — load the full class list as before
-      setLoadingProfile(false);
-      return;
+  // ── Logout handler ───────────────────────────────────────────────────────
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_PATH}/api/auth/logout/`, {
+        method: "POST",
+        credentials: "include",
+        headers: { "X-CSRFToken": getCookie("csrftoken") },
+      });
+    } catch {
+      // proceed even if request fails
     }
+    localStorage.clear();
+    window.location.href = "/login";
+  };
 
-    // Teacher — call /api/auth/me/ to get their assigned class
-    const fetchTeacherProfile = async () => {
+  // ── Step 1: Fetch current user from /api/auth/me/ ───────────────────────
+  // This is the single source of truth for role, name, id — no localStorage guessing.
+  useEffect(() => {
+    const bootstrap = async () => {
       setLoadingProfile(true);
       try {
         const res = await fetch(`${API_PATH}/api/auth/me/`, {
@@ -114,61 +131,87 @@ export default function Attendance() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data: AuthMeResponse = await res.json();
 
-        const profile = data.teacher_profile;
-        if (profile?.class_id) {
-          // Lock the selector to this class — teacher sees only their class
-          const assignedClass: ClassOption = {
-            id: profile.class_id,
-            name: profile.class_name,
-          };
-          setClasses([assignedClass]);          // only one item in the list
-          setSelectedClasses(assignedClass);
-          setIsClassLocked(true);              // disable the dropdown
-        } else {
-          // Teacher exists but has no assigned class yet
-          setSubmitError(
-            "You don't have an assigned class yet. Please contact your headteacher."
+        if (!data.success) throw new Error("Not authenticated");
+        const user = data.user;
+        setCurrentUser(user);
+
+        const isTeacher = user.role?.toLowerCase() === "teacher";
+
+        if (isTeacher) {
+          // ── Fetch teacher's assigned classes via teacher dashboard ──────
+          // /api/dashboard/teacher/?teacher_id={id} returns assigned_classes[]
+          const dashRes = await fetch(
+            `${API_PATH}/api/dashboard/teacher/?teacher_id=${user.id}`,
+            { credentials: "include" }
           );
+          if (!dashRes.ok) throw new Error(`Teacher dashboard HTTP ${dashRes.status}`);
+          const dashData: TeacherDashboardResponse = await dashRes.json();
+
+          if (dashData.success && dashData.data.assigned_classes?.length > 0) {
+            const assignedClasses: ClassOption[] = dashData.data.assigned_classes.map(
+              (c) => ({ id: c.id, name: c.name })
+            );
+            setClasses(assignedClasses);
+            setSelectedClasses(assignedClasses[0]); // default to first assigned class
+            setIsClassLocked(assignedClasses.length === 1); // lock only if exactly one class
+            setLoggedInTeacherId(user.id);
+          } else {
+            setSubmitError(
+              "You don't have an assigned class yet. Please contact your headteacher."
+            );
+          }
+        } else {
+          // ── Admin / Headteacher — load all classes & school name ────────
+          setLoggedInTeacherId(user.id);
+          await fetchAllClasses();
+          await fetchSchoolName();
         }
       } catch (err) {
-        console.error("Failed to fetch teacher profile:", err);
-        setSubmitError("Could not load your class assignment. Please refresh.");
+        console.error("Failed to load user profile:", err);
+        setSubmitError("Could not load your profile. Please refresh the page.");
       } finally {
         setLoadingProfile(false);
       }
     };
 
-    fetchTeacherProfile();
+    bootstrap();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Step 2: For non-teacher roles, load all classes (original logic) ──
-  useEffect(() => {
-    if (isClassLocked || loadingProfile) return; // teacher path already handled
-
-    const isTeacher = userRole?.toLowerCase() === "teacher";
-    if (isTeacher) return; // safety guard — handled above
-
-    const fetchClasses = async () => {
-      try {
-        const res = await fetch(`${API_PATH}/api/classes/`, {
-          credentials: "include",
-        });
-        const data = await res.json();
-        if (data.success) {
-          const list: ClassOption[] = (data.data.results ?? data.data).map(
-            (c: { id: number; name: string }) => ({ id: c.id, name: c.name })
-          );
-          setClasses(list);
-          if (list.length > 0) setSelectedClasses(list[0]);
-        }
-      } catch {
-        console.error("Failed to fetch classes");
+  const fetchAllClasses = async () => {
+    try {
+      const res = await fetch(`${API_PATH}/api/classes/`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success) {
+        const list: ClassOption[] = (data.data.results ?? data.data).map(
+          (c: { id: number; name: string }) => ({ id: c.id, name: c.name })
+        );
+        setClasses(list);
+        if (list.length > 0) setSelectedClasses(list[0]);
       }
-    };
-    fetchClasses();
-  }, [isClassLocked, loadingProfile, userRole]);
+    } catch {
+      console.error("Failed to fetch classes");
+    }
+  };
 
-  // ── Step 3: Load subjects whenever selected class changes ──
+  // School name comes from the admin dashboard response
+  const fetchSchoolName = async () => {
+    try {
+      const res = await fetch(`${API_PATH}/api/dashboard/admin/`, {
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (data.success && data.data?.school_name) {
+        setSchoolName(data.data.school_name);
+      }
+    } catch {
+      // non-critical — keep default
+    }
+  };
+
+  // ── Step 2: Load subjects whenever selected class changes ────────────────
   useEffect(() => {
     if (!selectedClasses) return;
     const fetchSubjects = async () => {
@@ -197,7 +240,7 @@ export default function Attendance() {
     fetchSubjects();
   }, [selectedClasses]);
 
-  // ── Step 4: Load students for the selected class ──
+  // ── Step 3: Load students for the selected class ─────────────────────────
   const fetchStudents = useCallback(async () => {
     if (!selectedClasses?.id) {
       setStudents([]);
@@ -210,7 +253,6 @@ export default function Attendance() {
     setSubmitError(null);
 
     const url = `${API_PATH}/api/students/?current_class=${selectedClasses.id}`;
-    console.log("FETCHING STUDENTS FROM →", url);
 
     try {
       const res = await fetch(url, { credentials: "include" });
@@ -245,7 +287,6 @@ export default function Attendance() {
         status: "A" as const,
       }));
 
-      // Extra filter: only keep students whose current_class matches
       const filtered = mapped.filter((s) => {
         const raw = rawList.find(
           (r: { id: number; current_class?: number }) => r.id === s.id
@@ -269,12 +310,11 @@ export default function Attendance() {
   }, [selectedClasses]);
 
   useEffect(() => {
-    // Don't try to load students until the profile (and class) is resolved
     if (loadingProfile) return;
     fetchStudents();
   }, [fetchStudents, loadingProfile]);
 
-  // ── QR scan handler ──
+  // ── QR scan handler ──────────────────────────────────────────────────────
   const handleQrSuccess = useCallback((admissionNumber: string) => {
     setStudents((prev) => {
       const alreadyPresent = prev.find(
@@ -308,7 +348,8 @@ export default function Attendance() {
     const submitData = {
       class_id: selectedClasses.id,
       date: selectedDate,
-      marked_by: 1, // TODO: replace with logged-in teacher id from /api/auth/me/
+      // Use the actual logged-in user's id instead of the hardcoded 1
+      marked_by: loggedInTeacherId,
       ...(selectedSubject ? { subject_id: selectedSubject.id } : {}),
       attendance: students.map((s) => ({
         student_id: String(s.id),
@@ -342,29 +383,27 @@ export default function Attendance() {
     }
   };
 
-  const routes = () => {
-    const role =
-      typeof window !== "undefined" ? localStorage.getItem("role") : null;
-    if (role === "Admin" || role === "admin") {
-      return <a href="/dashboard">Dashboard</a>;
-    } else {
-      return <a href="/students">Students</a>;
-    }
-  };
-
-  // ── Show a full-page loader while resolving the teacher's profile ──
+  // ── Full-page loader while resolving profile ─────────────────────────────
   if (loadingProfile) {
     return (
       <main className="flex items-center justify-center w-screen min-h-screen bg-[#dee2e6]">
         <div className="flex flex-col items-center gap-3">
           <Loader2 size={32} className="animate-spin text-blue-400" />
           <p className="text-sm text-gray-500 font-medium">
-            Loading your class...
+            Loading your profile...
           </p>
         </div>
       </main>
     );
   }
+
+  // ── Derive display values from live data ─────────────────────────────────
+  const displayName = currentUser?.full_name ?? "—";
+  const displayRole =
+    currentUser?.role
+      ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)
+      : "—";
+  const displayPhoto = currentUser?.photo ?? null;
 
   return (
     <main className="flex flex-col overflow-hidden overflow-y-scroll bg-[#dee2e6] w-screen min-h-screen attendance">
@@ -382,34 +421,51 @@ export default function Attendance() {
           />
           <div className="flex flex-col">
             <h1 className="text-gray-900 font-bold text-lg lg:text-2xl leading-tight">
-              EduTrack
+              {schoolName}
             </h1>
             <span className="text-gray-400 font-medium text-[10px] lg:text-sm hidden sm:block">
               PRIMARY SCHOOL SYSTEM
             </span>
           </div>
         </div>
+
         <div className="flex flex-row gap-3 lg:gap-6 justify-center items-center">
           <div className="flex flex-col justify-center items-end sm:flex">
             <h3 className="text-gray-900 font-bold text-sm lg:text-lg leading-tight">
-              Mrs. Sarah Jenkins
+              {displayName}
             </h3>
             <span className="text-gray-500 text-xs lg:text-sm">
-              Science Teacher
+              {displayRole}
             </span>
           </div>
-          <Image
-            className="bg-gray-800 rounded-full shrink-0 aspect-square object-cover"
-            src={"/image1.jpg"}
-            alt="Profile"
-            width={44}
-            height={44}
-            priority
-          />
+
+          {displayPhoto ? (
+            <Image
+              className="bg-gray-800 rounded-full shrink-0 aspect-square object-cover"
+              src={displayPhoto}
+              alt="Profile"
+              width={44}
+              height={44}
+              priority
+            />
+          ) : (
+            // Fallback avatar with initials when no photo is set
+            <div className="w-11 h-11 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+              {currentUser?.first_name?.charAt(0) ?? "?"}
+            </div>
+          )}
+
           <Bell color="black" size={20} className="cursor-pointer" />
-          <span className="flex flex-row items-center gap text-gray-900">
-            <SquareArrowDownLeft size={18} /> {routes()}
-          </span>
+
+          {/* Logout — replaces the old students/dashboard link */}
+          <button
+            onClick={handleLogout}
+            className="flex flex-row items-center gap-1.5 text-gray-700 hover:text-red-500 transition-colors text-sm font-medium"
+            title="Logout"
+          >
+            <LogOut size={18} />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
         </div>
       </section>
 
@@ -425,7 +481,6 @@ export default function Attendance() {
                   Take Attendance
                 </h1>
               </div>
-              {/* Show a subtle locked label when a teacher's class is pre-loaded */}
               {isClassLocked && selectedClasses && (
                 <span className="text-xs text-blue-500 font-medium ml-8">
                   Locked to: {selectedClasses.name}
@@ -450,7 +505,7 @@ export default function Attendance() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-row lg:justify-between lg:items-end gap-4 lg:gap-6">
 
-            {/* Class selector — disabled for teachers */}
+            {/* Class selector — disabled when teacher has only one class */}
             <div className="flex flex-col gap-2">
               <h4 className="text-xs font-bold text-gray-500 uppercase ml-3 tracking-wider">
                 Select Class
@@ -458,7 +513,7 @@ export default function Attendance() {
               <select
                 className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-gray-700 text-sm outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer w-full disabled:opacity-60 disabled:cursor-not-allowed"
                 value={selectedClasses?.id ?? ""}
-                disabled={isClassLocked} // teachers cannot change their class
+                disabled={isClassLocked}
                 onChange={(e) => {
                   const found = classes.find(
                     (c) => c.id === Number(e.target.value)
@@ -550,7 +605,6 @@ export default function Attendance() {
           className="manual-attendance w-[95%] lg:w-[90%] bg-white shadow-xl rounded-xl mt-6 lg:mt-9"
           style={{ minHeight: "50vh" }}
         >
-          {/* Table header */}
           <div className="grid grid-cols-12 bg-green-50 px-4 py-3 rounded-t-xl text-[10px] lg:text-xs font-bold text-gray-500 uppercase tracking-wider">
             <div className="col-span-1">#</div>
             <div className="col-span-6 sm:col-span-5">Student</div>
@@ -558,7 +612,6 @@ export default function Attendance() {
             <div className="col-span-5 sm:col-span-3 text-center">Status</div>
           </div>
 
-          {/* Loading */}
           {loadingStudents && (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <Loader2 size={28} className="animate-spin text-blue-400" />
@@ -568,7 +621,6 @@ export default function Attendance() {
             </div>
           )}
 
-          {/* Empty */}
           {!loadingStudents && students.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16">
               <p className="text-sm text-gray-400 font-medium">
@@ -579,7 +631,6 @@ export default function Attendance() {
             </div>
           )}
 
-          {/* Rows */}
           {!loadingStudents &&
             students.map((student, idx) => {
               const isPresent = student.status === "P";
