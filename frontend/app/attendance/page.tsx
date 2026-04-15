@@ -12,6 +12,7 @@ import {
     Loader2,
     LogOut,
     Lock,
+    SquareArrowDownLeft,
 } from "lucide-react";
 import ScannerPage from "../components/AttendanceComponents/QrCodeScannerComponent";
 import PreviousAttendanceRecords from "../components/AttendanceComponents/PreviousAttendance";
@@ -458,16 +459,27 @@ export default function Attendance() {
 
                         <Bell color="black" size={20} className="cursor-pointer" />
 
-                        {/* Logout button — replaces the old Students link */}
-                        <button
-                            onClick={handleLogout}
-                            disabled={loggingOut}
-                            className="flex flex-row items-center gap-1.5 text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-50"
-                            title="Logout"
-                        >
-                            <LogOut size={18} />
-                            <span className="hidden sm:inline">Logout</span>
-                        </button>
+                        {/* Logout button && Students link */}
+                        {isAdmin?(
+                            <a 
+                                href="/dashboard"
+                                className="flex flex-row items-center gap-2 text-gray-900 hover:text-blue-600 transition-colors font-medium"
+                            >
+                                <SquareArrowDownLeft size={18} />
+                                <span className="hidden sm:inline">Dashboard</span>
+                            </a>
+                        ):(
+
+                            <button
+                                onClick={handleLogout}
+                                disabled={loggingOut}
+                                className="flex flex-row items-center gap-1.5 text-red-500 hover:text-red-700 text-sm font-medium transition-colors disabled:opacity-50"
+                                title="Logout"
+                            >
+                                <LogOut size={18} />
+                                <span className="hidden sm:inline">Logout</span>
+                            </button>
+                        )}
                     </div>
                 </section>
 
