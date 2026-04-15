@@ -424,10 +424,9 @@ export default function Attendance() {
                             priority
                         />
                         <div className="flex flex-col">
-                            <h1 className="text-gray-900 font-bold text-lg lg:text-2xl leading-tight">EduTrack</h1>
-                            {/* School name: dynamic from /me, falls back gracefully */}
+                            <h1 className="text-gray-900 font-bold text-lg lg:text-2xl leading-tight">{schoolName}</h1>
                             <span className="text-gray-400 font-medium text-[10px] lg:text-sm hidden sm:block uppercase tracking-wider">
-                                {schoolName}
+                                PRIMARY SCHOOL
                             </span>
                         </div>
                     </div>
