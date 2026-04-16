@@ -9,7 +9,15 @@ import AttendanceTable from "../components/DashboardComponents/AttendanceTable";
 import { API_PATH } from "../lib/path";
 
 
-interface User{
+interface TeacherProfile {
+    teacher_id: number;
+    employee_id: string;
+    subject_specialization: string;
+    classes: { id: number; name: string; grade_level: number; section: string }[];
+    school: { id: number; name: string } | null;
+}
+
+interface User {
     id: number;
     username: string;
     email: string;
@@ -21,120 +29,138 @@ interface User{
     photo: string | null;
     is_active: boolean;
     date_joined: string;
+    teacher_profile_data: TeacherProfile | null;
 }
 
-interface Attendance{
-    percentage:number;
-    status:"active" | "warning";
+interface Attendance {
+    percentage: number;
+    status: "active" | "warning";
 }
+
 interface StatsData {
     total_students: number;
-    students_change_percentage:number;
+    students_change_percentage: number;
     active_classes: number;
     total_absentees_today: number;
     alert: boolean;
     todays_attendance: Attendance;
 }
 
-interface AttendanceData{
-    weekly_attendance_trend:{
-        day:string;
-        date:string;
-        percentage:number;
+interface AttendanceData {
+    weekly_attendance_trend: {
+        day: string;
+        date: string;
+        percentage: number;
     }[];
-    staff_performance:{
+    staff_performance: {
         teacher: string;
-        grade:string;
-        submission_status:string;
-        status:"completed" |  "pending";
-    }[],
-    recent_submissions:{
-        teacher:string;
-        class_name:string;
-        submission_time:string;
+        grade: string;
+        submission_status: string;
+        status: "completed" | "pending";
+    }[];
+    recent_submissions: {
+        teacher: string;
+        class_name: string;
+        submission_time: string;
         present: number;
-        total:number;
-        status:"completed" |  "pending";
-    }[],
+        total: number;
+        status: "completed" | "pending";
+    }[];
 }
 
 
 export default function Dashboard() {
-    const Icon = Bell;
-    const [username, setUsername] = useState<User |null>(null);
-    const [ tabData, setTabData] = useState<StatsData | null>(null);
-    const [attendanceData, setAttendanceData] = useState<AttendanceData | null>(null)
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
+    const [tabData, setTabData] = useState<StatsData | null>(null);
+    const [attendanceData, setAttendanceData] = useState<AttendanceData | null>(null);
 
+    // ── Derived display values ──────────────────────────────────────────────
+    const schoolName = "Makena Primary School";
+
+    const displayName = currentUser?.username || "Loading...";
+    const roleLabel = (() => {
+        const role = currentUser?.role ?? "";
+        if (role === "admin" || role === "Admin") return "Headteacher";
+        return role;
+    })();
 
     const tabs = [
-        { index: 1, icon: Users2Icon, stats: `${tabData?.students_change_percentage ?? 0} %`, name: 'Total Students', value: tabData?.total_students ?? 0, iconColor: '1976d2', bgColor: '#e3f2fd', val: 'increase' },
-        { index: 2, icon: CheckCheck, stats: tabData?.todays_attendance.status ?? 'warning', name: 'Todays Attendance', value: `${tabData?.todays_attendance.percentage ?? 0} %`, iconColor: '1976d2', bgColor: '#e3f2fd' },
-        { index: 3, icon: Album, stats: '', name: 'Active Classes', value: tabData?.active_classes ?? 0, iconColor: 'ff7b00', bgColor: '#ffe169', val: 'increase' },
-        { index: 4, icon: UserX, stats:tabData?.alert ? 'High' : 'Normal', name: 'Total Absentees Today', value: tabData?.total_absentees_today ?? 0, iconColor: 'ba181b', bgColor: '#ff8fa3', val: 'alert' },
+        { index: 1, icon: Users2Icon, stats: `${tabData?.students_change_percentage ?? 0} %`, name: "Total Students", value: tabData?.total_students ?? 0, iconColor: "1976d2", bgColor: "#e3f2fd", val: "increase" },
+        { index: 2, icon: CheckCheck, stats: tabData?.todays_attendance.status ?? "warning", name: "Todays Attendance", value: `${tabData?.todays_attendance.percentage ?? 0} %`, iconColor: "1976d2", bgColor: "#e3f2fd" },
+        { index: 3, icon: Album, stats: "", name: "Active Classes", value: tabData?.active_classes ?? 0, iconColor: "ff7b00", bgColor: "#ffe169", val: "increase" },
+        { index: 4, icon: UserX, stats: tabData?.alert ? "High" : "Normal", name: "Total Absentees Today", value: tabData?.total_absentees_today ?? 0, iconColor: "ba181b", bgColor: "#ff8fa3", val: "alert" },
     ];
 
-    useEffect(()=>{
-        const fetchUser = async() =>{
-            const res = await fetch(`${API_PATH}/api/auth/me/`,{
-                method:'GET',
-                credentials:"include",
-            })
-
+    useEffect(() => {
+        const fetchUser = async () => {
+            const res = await fetch(`${API_PATH}/api/auth/me/`, {
+                method: "GET",
+                credentials: "include",
+            });
             const data = await res.json();
-
-            if (res.status === 200){
-                setUsername(data.user);
+            if (res.status === 200) {
+                setCurrentUser(data.user);
             }
-        }
+        };
 
-        const fetchDashboardData = async() =>{
-            const res = await fetch(`${API_PATH}/api/attendance/dashboard/stats/`,{
-                method:'GET',
-                credentials:'include'
-            })
-
+        const fetchDashboardData = async () => {
+            const res = await fetch(`${API_PATH}/api/attendance/dashboard/stats/`, {
+                method: "GET",
+                credentials: "include",
+            });
             const data = await res.json();
-            console.log(data)
-
-            if(res.status === 200 && data.success){
+            if (res.status === 200 && data.success) {
                 setTabData(data.data.statistics);
                 setAttendanceData(data.data);
             }
-        }  
-
+        };
 
         fetchUser();
         fetchDashboardData();
-    },[])
+    }, []);
 
     return (
         <main className="bg-[#dee2e6] min-h-screen w-screen flex flex-row gap-2 lg:gap-5">
             <Sidebar />
-            
+
             <section className="h-screen w-full lg:w-[82%] pt-4 lg:pt-6 dashboard overflow-y-scroll overflow-x-hidden">
 
                 {/* Top navbar */}
                 <div className="bg-white dash-navbar rounded-lg px-3 lg:px-5 pt-2 pb-2 mb-4 lg:mb-7 flex flex-row justify-between items-center mx-2 lg:mx-0">
                     <div className="flex flex-col text-black">
-                        <h1 className="text-sm sm:text-base lg:text-xl">Maplewood Primary School</h1>
-                        <span className="text-[#6c757d] text-xs sm:text-sm">Welcome back, Administrator</span>
+                        {/* School name — dynamic from /me, derived via teacher → class → school */}
+                        <h1 className="text-sm sm:text-base lg:text-xl">{schoolName}</h1>
+                        <span className="text-[#6c757d] text-xs sm:text-sm">
+                            Welcome back, {roleLabel}
+                        </span>
                     </div>
                     <div className="gap-3 lg:gap-6 flex flex-row justify-center items-center">
-                        <Icon size={18} color="#6c757d" />
+                        <Bell size={18} color="#6c757d" />
                         <div className="w-[0.9px] h-10 bg-[#adb5bd] hidden sm:block"></div>
                         <div className="flex flex-row gap-2 lg:gap-4">
-                            <div className="flex flex-col text-end  sm:flex">
-                                <h3 className="text-black text-sm lg:text-lg font-bold uppercase">{username?.username || 'Maplewood Johnson'}</h3>
-                                <span className="text-xs lg:text-sm text-[#6c757d] uppercase">{username?.role || ''}</span>
+                            <div className="flex flex-col text-end sm:flex">
+                                {/* Full name + role — both dynamic from /me */}
+                                <h3 className="text-black text-sm lg:text-lg font-bold uppercase">
+                                    {displayName}
+                                </h3>
+                                <span className="text-xs lg:text-sm text-[#6c757d] uppercase">
+                                    {roleLabel}
+                                </span>
                             </div>
-                            <Image
-                                className="white:invert bg-black rounded-full"
-                                src="/image1.jpg"
-                                alt="Next.js logo"
-                                width={50}
-                                height={50}
-                                priority
-                            />
+                            {currentUser?.photo ? (
+                                <Image
+                                    className="bg-black rounded-full object-cover"
+                                    src={currentUser.photo}
+                                    alt="Profile"
+                                    width={50}
+                                    height={50}
+                                    priority
+                                />
+                            ) : (
+                                <div className="w-[50px] h-[50px] rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-lg shrink-0">
+                                    {displayName.charAt(0).toUpperCase()}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -142,8 +168,8 @@ export default function Dashboard() {
                 {/* Stats cards */}
                 <div className="w-full p-2 lg:p-4 grid grid-cols-2 xl:grid-cols-4 gap-3 lg:gap-6 mb-2">
                     {tabs.map((item) => {
-                        const textBgColor = (item.val === 'alert') ? 'bg-red-100' : 'bg-green-100';
-                        const textColor = (item.val === 'alert') ? 'text-red-600' : 'text-green-600';
+                        const textBgColor = item.val === "alert" ? "bg-red-100" : "bg-green-100";
+                        const textColor = item.val === "alert" ? "text-red-600" : "text-green-600";
                         return (
                             <div key={item.index} className="bg-white p-3 lg:p-4 rounded-xl flex flex-col justify-between shadow-md">
                                 <div className="flex flex-row gap-2 justify-between items-center">
@@ -165,7 +191,6 @@ export default function Dashboard() {
 
                 {/* Charts section */}
                 <div className="performance-tabs w-full gap-4 lg:gap-10 flex flex-col xl:flex-row mb-4 lg:mb-6 px-2 lg:px-0">
-                    {/* Attendance chart */}
                     <div className="performance-graph w-full xl:w-[65%] bg-gray-50 shadow-xl p-4 lg:p-5 rounded-2xl">
                         <div className="flex items-center justify-between w-full mb-4 lg:mb-6">
                             <header className="flex flex-col">
@@ -180,7 +205,6 @@ export default function Dashboard() {
                         <AttendanceChart componentData={attendanceData?.weekly_attendance_trend || []} />
                     </div>
 
-                    {/* Staff performance */}
                     <div className="staff-performance w-full xl:w-[35%] shadow-xl bg-gray-50 p-4 lg:p-6 rounded-2xl">
                         <div>
                             <h1 className="text-base lg:text-xl font-bold text-gray-900 mb-6 mt-2 lg:mb-8">Staff Performance</h1>
