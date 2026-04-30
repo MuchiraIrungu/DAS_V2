@@ -39,6 +39,8 @@ class User(AbstractUser):
         related_name='custom_user_set',  
         related_query_name='custom_user',
     )
+
+    school = models.ForeignKey('School', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff_users')
     
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"

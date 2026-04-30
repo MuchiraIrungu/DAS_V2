@@ -1,5 +1,4 @@
 # Backend/students/admin.py
-# Updated admin configuration
 
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
@@ -9,25 +8,28 @@ from .models import User, School, Class, Student, Teacher
 
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
-    list_display = ['username', 'email', 'role', 'full_name', 'photo_thumbnail', 'is_staff', 'is_active']
-    list_filter = ['role', 'is_staff', 'is_active']
+    list_display = ['username', 'email', 'role', 'school', 'full_name', 'photo_thumbnail', 'is_staff', 'is_active']
+    list_filter = ['role', 'school', 'is_staff', 'is_active']
     search_fields = ['username', 'email', 'first_name', 'last_name']
-    
+
     fieldsets = UserAdmin.fieldsets + (
         ('Additional Info', {
-            'fields': ('role', 'phone', 'photo')
+            'fields': ('role', 'phone', 'photo', 'school')
         }),
     )
-    
+
     add_fieldsets = UserAdmin.add_fieldsets + (
         ('Additional Info', {
-            'fields': ('role', 'phone', 'photo')
+            'fields': ('role', 'phone', 'photo', 'school')
         }),
     )
-    
+
     def photo_thumbnail(self, obj):
         if obj.photo:
-            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%;" />', obj.photo.url)
+            return format_html(
+                '<img src="{}" width="50" height="50" style="border-radius:50%;" />',
+                obj.photo.url
+            )
         return "No photo"
     photo_thumbnail.short_description = 'Photo'
 
@@ -45,7 +47,7 @@ class ClassAdmin(admin.ModelAdmin):
     list_filter = ['grade_level', 'academic_year', 'school']
     search_fields = ['name', 'nickname']
     readonly_fields = ['created_at', 'updated_at', 'student_count']
-    
+
     def student_count(self, obj):
         return obj.student_count
     student_count.short_description = 'Students'
@@ -54,19 +56,19 @@ class ClassAdmin(admin.ModelAdmin):
 @admin.register(Student)
 class StudentAdmin(admin.ModelAdmin):
     list_display = [
-        'admission_number', 
-        'full_name', 
+        'admission_number',
+        'full_name',
         'photo_thumbnail',
         'email',
-        'current_class', 
+        'current_class',
         'status',
         'is_birthday_today_display',
-        'enrollment_date'
+        'enrollment_date',
     ]
     list_filter = ['current_class', 'status', 'gender', 'enrollment_date']
     search_fields = ['admission_number', 'first_name', 'last_name', 'email', 'parent_name', 'parent_phone']
     readonly_fields = ['created_at', 'updated_at', 'age', 'is_birthday_today']
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('admission_number', 'first_name', 'last_name', 'email', 'photo', 'date_of_birth', 'gender')
@@ -85,16 +87,19 @@ class StudentAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
     def photo_thumbnail(self, obj):
         if obj.photo:
-            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%;" />', obj.photo.url)
+            return format_html(
+                '<img src="{}" width="50" height="50" style="border-radius:50%;" />',
+                obj.photo.url
+            )
         return "No photo"
     photo_thumbnail.short_description = 'Photo'
-    
+
     def is_birthday_today_display(self, obj):
         if obj.is_birthday_today:
-            return format_html('<span style="color: green;">🎂 Yes</span>')
+            return format_html('<span style="color:green;">🎂 Yes</span>')
         return "No"
     is_birthday_today_display.short_description = 'Birthday Today'
 
@@ -102,25 +107,27 @@ class StudentAdmin(admin.ModelAdmin):
 @admin.register(Teacher)
 class TeacherAdmin(admin.ModelAdmin):
     list_display = [
-        'employee_id', 
+        'employee_id',
         'full_name',
         'photo_thumbnail',
-        'email', 
+        'email',
         'phone',
+        'get_school',          # ← computed: Teacher has no direct school FK
         'assigned_classes_count',
-        'is_active'
+        'is_active',
     ]
-    list_filter = ['is_active', 'subject_specialization']
+    list_filter = ['is_active', 'subject_specialization', 'classes__school']
     search_fields = ['employee_id', 'first_name', 'last_name', 'email']
     filter_horizontal = ['classes']
-    readonly_fields = ['created_at', 'updated_at', 'assigned_classes_count']
-    
+    readonly_fields = ['created_at', 'updated_at', 'assigned_classes_count', 'get_school']
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('employee_id', 'first_name', 'last_name', 'email', 'phone', 'photo')
         }),
         ('Professional Information', {
-            'fields': ('subject_specialization', 'classes', 'assigned_classes_count')
+            
+            'fields': ('get_school', 'subject_specialization', 'classes', 'assigned_classes_count')
         }),
         ('Account', {
             'fields': ('user', 'is_active')
@@ -130,10 +137,23 @@ class TeacherAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
+    def get_school(self, obj):
+        """
+        Teacher has no direct school FK — derive it from their first assigned class.
+        This mirrors the logic in get_user_school() in views.py.
+        """
+        first_class = obj.classes.select_related('school').first()
+        if first_class:
+            return first_class.school.name
+        return "—"
+    get_school.short_description = 'School'
+
     def photo_thumbnail(self, obj):
         if obj.photo:
-            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%;" />', obj.photo.url)
+            return format_html(
+                '<img src="{}" width="50" height="50" style="border-radius:50%;" />',
+                obj.photo.url
+            )
         return "No photo"
     photo_thumbnail.short_description = 'Photo'
-

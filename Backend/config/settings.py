@@ -39,6 +39,8 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,das-v2.verc
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "https://das-v2.vercel.app",
+    "http://localhost:3000",        
+    "http://127.0.0.1:3000",  
 ]
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -156,11 +158,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-#STATICFILES_DIRS = [
- #   BASE_DIR / 'static', 
-#]
+STATICFILES_DIRS = [
+   BASE_DIR / 'static', 
+]
 
 # Default primary key field type
 #CORS_ALLOW_ALL_ORIGINS = True
@@ -169,6 +171,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://das-v2.vercel.app", 
     "https://das-v2.onrender.com",
     "https://*.vercel.app",
+    "http://localhost:3000",        # ← local frontend
+    "http://127.0.0.1:3000",
 ]
 
 
